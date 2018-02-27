@@ -1,2 +1,2 @@
 # gtplanner-backend
-A backend for GT-Planner app
+A backend for www.gtplanner.com
