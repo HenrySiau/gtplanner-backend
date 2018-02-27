@@ -46,3 +46,10 @@ exports.signIn = function (req, res) {
     }
 };
 
+exports.loginRequired = function (req, res, nex) {
+    if (req.user) {
+        next();
+      } else {
+        return res.status(401).json({ message: 'Unauthorized user!' });
+      }
+};
