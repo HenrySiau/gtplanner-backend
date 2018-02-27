@@ -1,14 +1,10 @@
-var restify = require('restify');
+var config = require( './config');
+var express = require('express');
+var mongoose = require('mongoose');
 
-function respond(req, res, next){
-    res.send('hello ' + req.params.name);
-    next();
-}
+const server = express();
+server.get('/hello', (req, res) => {res.send('Hello');});
 
-var server = restify.createServer();
-server.get('/hello/:name', respond);
-server.head('/hello/:name', respond);
-
-server.listen(8080, function() {
-  console.log('%s listening at %s', server.name, server.url);
+server.listen(config.port, config.host, () => {
+    console.info('Express listening on port', config.port);
 });
