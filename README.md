@@ -21,4 +21,3 @@ Start MongoDB then open package.json in terminal and run
 $ npm start
 ```
 you can test the APIs with [Postman](https://www.getpostman.com/)
-
