@@ -13,6 +13,7 @@ router.get('/echouser', userHandlers.echoUser);
 router.get('/getuser', loginRequired, userHandlers.getUser);
 
 router.post('/signin', userHandlers.signIn);
+router.post('/register', userHandlers.register);
 
 
 exports.apiRouter = router;

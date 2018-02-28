@@ -4,11 +4,14 @@ var mongoose = require('mongoose');
 var jwt = require('jsonwebtoken');
 
 exports.register = function (req, res) {
-    if (!req.body) return res.sendStatus(400);
     if (req.body.email &&
         req.body.userName &&
         req.body.password &&
         req.body.passwordConf) {
+        if (req.body.password != req.body.passwordConf) return res.json({
+            success: false,
+            message: 'password and confirm password not match'
+        });
         var userData = {
             email: req.body.email,
             userName: req.body.userName,
@@ -16,18 +19,30 @@ exports.register = function (req, res) {
             passwordConf: req.body.passwordConf,
         };
         //use schema.create to insert data into the db
+        //TODO: more specific error handlings required
+        // TODO: user name validation required
+        // TODO: consider using express passport
         User.create(userData, function (err) {
             if (err) {
                 console.error('Can not create User name: ' + req.body.username);
-                res.send(err);
+                return res.json({
+                    success: false,
+                    message: 'can not create user'
+                });
             } else {
-                return res.send('added user');
+                return res.json({
+                    success: true,
+                    message: 'new user created'
+                });
             }
         });
 
     } else {
         // user registration form missing information
-        res.redirect('/newuser');
+        res.json({
+            success: false,
+            message: 'please fill up the form'
+        });
     }
 };
 
@@ -51,7 +66,7 @@ exports.signIn = function (req, res) {
                 });
             }
         });
-    }else{
+    } else {
         res.json({
             success: false,
             message: 'Invalid username or password'
@@ -76,4 +91,3 @@ exports.getUser = function (req, res) {
     })
 
 };
-
