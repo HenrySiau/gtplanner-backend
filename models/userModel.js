@@ -70,7 +70,7 @@ UserSchema.statics.authenticate = function (email, password, callback) {
         });
 };
 
-exports.User = mongoose.model('User', UserSchema);
-// module.exports = {
-// User: User
-// }
+const User = mongoose.model('User', UserSchema);
+module.exports = {
+User: User
+}

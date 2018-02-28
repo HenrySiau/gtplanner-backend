@@ -12,7 +12,7 @@ router.get('/echouser', userHandlers.echoUser);
 // for testing middleware
 router.get('/getuser', loginRequired, userHandlers.getUser);
 
-router.post('/authenticate', userHandlers.authenticate);
+router.post('/signin', userHandlers.signIn);
 
 
 exports.apiRouter = router;

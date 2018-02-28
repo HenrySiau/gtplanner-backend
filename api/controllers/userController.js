@@ -40,16 +40,21 @@ exports.signIn = function (req, res) {
                     message: 'Authentication failed. Wrong password.'
                 });
             } else {
-                req.session.userId = user._id;
-                req.session.userName = user.userName;
+                const payload = {
+                    userId: '0001'
+                };
+                var token = jwt.sign(payload, superSecret);
                 res.json({
-                    token: jwt.sign({
-                        email: user.email,
-                        fullName: user.fullName,
-                        _id: user._id
-                    }, 'RESTFULAPIs')
+                    success: true,
+                    token: token,
+                    userId: user._id
                 });
             }
+        });
+    }else{
+        res.json({
+            success: false,
+            message: 'Invalid username or password'
         });
     }
 };
@@ -72,24 +77,3 @@ exports.getUser = function (req, res) {
 
 };
 
-exports.authenticate = function (req, res) {
-    if (req.body.username == 'Henry') {
-        const payload = {
-            userId: '0001'
-        };
-        var token = jwt.sign(payload, superSecret);
-
-        res.json({
-            success: true,
-            message: 'You are logged in',
-            token: token
-        });
-    } else {
-        res.json({
-            success: false,
-            message: 'Invalid username or password'
-        });
-    }
-
-
-};
