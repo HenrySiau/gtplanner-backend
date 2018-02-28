@@ -1,9 +1,19 @@
 var config = require( './config');
 var express = require('express');
+var bodyParser = require('body-parser');
+var morgan = require('morgan');
 var mongoose = require('mongoose');
 var apiRouter = require('./api/routers').apiRouter;
 
+
 const server = express();
+
+// use body parser so we can get info from POST and/or URL parameters
+server.use(bodyParser.urlencoded({ extended: false }));
+server.use(bodyParser.json());
+
+// use morgan to log requests to the console
+server.use(morgan('dev'));
 
 // Database Connection config
 const mongooseOptions = {
@@ -32,8 +42,6 @@ db.once('open', function () {
 });
 
 server.use('/api', apiRouter);
-
-server.get('/hello', (req, res) => {res.send('Hello');});
 
 server.listen(config.port, config.host, () => {
     console.info('Express listening on port', config.port);

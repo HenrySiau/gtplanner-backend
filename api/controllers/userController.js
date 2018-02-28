@@ -1,7 +1,7 @@
 var User = require('../../models/userModel').User;
-var mongoose = require('mongoose'),
-    jwt = require('jsonwebtoken');
-    // User = mongoose.model('User');
+var superSecret = require('../../config').superSecret;
+var mongoose = require('mongoose');
+var jwt = require('jsonwebtoken');
 
 exports.register = function (req, res) {
     if (!req.body) return res.sendStatus(400);
@@ -36,20 +36,94 @@ exports.signIn = function (req, res) {
         User.authenticate(req.body.email, req.body.password, function (err, user) {
             if (err || !user) {
                 console.error('err:' + err);
-                return res.status(401).json({ message: 'Authentication failed. Wrong password.' });
+                return res.status(401).json({
+                    message: 'Authentication failed. Wrong password.'
+                });
             } else {
                 req.session.userId = user._id;
                 req.session.userName = user.userName;
-                res.json({token: jwt.sign({ email: user.email, fullName: user.fullName, _id: user._id}, 'RESTFULAPIs')});
+                res.json({
+                    token: jwt.sign({
+                        email: user.email,
+                        fullName: user.fullName,
+                        _id: user._id
+                    }, 'RESTFULAPIs')
+                });
             }
         });
     }
 };
 
-exports.loginRequired = function (req, res, nex) {
-    if (req.user) {
-        next();
-      } else {
-        return res.status(401).json({ message: 'Unauthorized user!' });
-      }
+// for testing data base connection
+exports.echoUser = function (req, res) {
+    User.findOne().exec(function (err, user) {
+        if (err) return console.err(err);
+        res.send('User name: ' + user.userName);
+    })
+
+};
+
+// for testing data base connection
+exports.getUser = function (req, res) {
+    User.findOne().exec(function (err, user) {
+        if (err) return console.err(err);
+        res.send('User name: ' + user.userName);
+    })
+
+};
+
+exports.authenticate = function (req, res) {
+    if (req.body.username == 'Henry') {
+        const payload = {
+            userId: '0001'
+        };
+        var token = jwt.sign(payload, superSecret);
+
+        res.json({
+            success: true,
+            message: 'You are logged in',
+            token: token
+        });
+    } else {
+        res.json({
+            success: false,
+            message: 'Invalid username or password'
+        });
+    }
+
+
+};
+
+exports.loginRequired = function (req, res, next) {
+    var token = req.body.token || req.query.token || req.headers['x-access-token'];
+    if (token) {
+        // verifies secret and checks exp
+        jwt.verify(token, superSecret, function (err, decoded) {
+            if (err) {
+                return res.json({
+                    success: false,
+                    message: 'Failed to authenticate token.'
+                });
+            } else {
+                // if everything is good, save to request for use in other routes
+                req.decoded = decoded;
+                console.log(decoded);
+                next();
+            }
+        });
+    } else {
+        return res.status(403).send({
+            success: false,
+            message: 'No token provided.'
+        });
+    }
+
+
+    // if (req.user) {
+    //     next();
+    // } else {
+    //     return res.status(401).json({
+    //         message: 'Unauthorized user!'
+    //     });
+    // }
 };

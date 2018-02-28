@@ -6,4 +6,12 @@ router.get('/hello', (req, res)=>{
     res.send('hello');
 })
 
-module.exports.apiRouter = router;
+// for testing database connection
+router.get('/echouser', userHandlers.echoUser);
+// for testing middleware
+router.get('/getuser', userHandlers.loginRequired, userHandlers.getUser);
+
+router.post('/authenticate', userHandlers.authenticate);
+
+
+exports.apiRouter = router;

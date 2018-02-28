@@ -11,5 +11,6 @@ module.exports = {
     host: env.HOST || '0.0.0.0',
     get serverUrl() {
         return `http://${this.host}:${this.port}`;
-    }
+    },
+    superSecret: 'asdfnkko238klh&@ssd'
 };
