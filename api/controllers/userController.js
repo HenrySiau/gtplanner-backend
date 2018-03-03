@@ -25,12 +25,12 @@ exports.register = function (req, res) {
         User.create(userData, function (err) {
             if (err) {
                 console.error('Can not create User name: ' + req.body.username);
-                return res.json({
+                return res.status(500).json({
                     success: false,
                     message: 'can not create user'
                 });
             } else {
-                return res.json({
+                return res.status(200).json({
                     success: true,
                     message: 'new user created'
                 });
@@ -39,9 +39,9 @@ exports.register = function (req, res) {
 
     } else {
         // user registration form missing information
-        res.json({
+        res.status(400).json({
             success: false,
-            message: 'please fill up the form'
+            message: 'please complete the form'
         });
     }
 };
@@ -52,14 +52,14 @@ exports.signIn = function (req, res) {
             if (err || !user) {
                 console.error('err:' + err);
                 return res.status(401).json({
-                    message: 'Authentication failed. Wrong password.'
+                    message: 'Invalid username or password.'
                 });
             } else {
                 const payload = {
                     userId: '0001'
                 };
                 var token = jwt.sign(payload, superSecret);
-                res.json({
+                res.status(200).json({
                     success: true,
                     token: token,
                     userId: user._id
@@ -67,7 +67,7 @@ exports.signIn = function (req, res) {
             }
         });
     } else {
-        res.json({
+        res.status(400).json({
             success: false,
             message: 'Invalid username or password'
         });

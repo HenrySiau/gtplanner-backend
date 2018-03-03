@@ -8,8 +8,8 @@ router.get('/echouser', userHandlers.echoUser);
 // for testing middleware
 router.get('/getuser', loginRequired, userHandlers.getUser);
 
-router.post('/signin', userHandlers.signIn);
-router.post('/register', userHandlers.register);
+router.post('/post/signin', userHandlers.signIn);
+router.post('/post/register', userHandlers.register);
 
 
 exports.apiRouter = router;
