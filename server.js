@@ -4,9 +4,13 @@ var bodyParser = require('body-parser');
 var morgan = require('morgan');
 var mongoose = require('mongoose');
 var apiRouter = require('./api/routers').apiRouter;
+var cors = require('cors');
 
 
 const server = express();
+
+// enable CORSS(Cross Origin Resource Sharing)
+server.use(cors());
 
 // use body parser so we can get info from POST and/or URL parameters
 server.use(bodyParser.urlencoded({ extended: false }));
