@@ -7,7 +7,7 @@ exports.register = function (req, res) {
     if (req.body.email &&
         req.body.userName &&
         req.body.password &&
-        req.body.passwordConf) {
+        req.body.passwordConfirm) {
         if (req.body.password != req.body.passwordConf) return res.json({
             success: false,
             message: 'password and confirm password not match'
@@ -16,7 +16,7 @@ exports.register = function (req, res) {
             email: req.body.email,
             userName: req.body.userName,
             password: req.body.password,
-            passwordConf: req.body.passwordConf,
+            phoneNumber: req.body.phoneNumber
         };
         //use schema.create to insert data into the db
         //TODO: more specific error handlings required
@@ -67,7 +67,7 @@ exports.signIn = function (req, res) {
             }
         });
     } else {
-        res.status(400).json({
+        res.status(401).json({
             success: false,
             message: 'Invalid username or password'
         });
