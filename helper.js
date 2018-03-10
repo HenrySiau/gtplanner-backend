@@ -26,7 +26,7 @@ exports.loginRequired = function (req, res, next) {
                         message: 'Token expired.'
                     });
                 } else {
-                    req.decoded = decoded;
+                    req.decodedJWT = decoded;
                     next();
                 }
 
