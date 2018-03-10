@@ -2,6 +2,7 @@ var User = require('../../models/userModel').User;
 var superSecret = require('../../config').superSecret;
 var mongoose = require('mongoose');
 var jwt = require('jsonwebtoken');
+var config = require('../../config');
 
 exports.register = function (req, res) {
     if (req.body.email &&
@@ -56,7 +57,9 @@ exports.signIn = function (req, res) {
                 });
             } else {
                 const payload = {
-                    userId: '0001'
+                    userId: user._id,
+                    // iat is short for is available till
+                    iat: Date.now()+config.JWTValidForMS
                 };
                 var token = jwt.sign(payload, superSecret);
                 res.status(200).json({
