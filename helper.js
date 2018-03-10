@@ -1,8 +1,9 @@
 var jwt = require('jsonwebtoken');
 var superSecret = require('./config').superSecret;
 
+// TODO: add a function to limit heavy request
 exports.loginRequired = function (req, res, next) {
-    var token = req.body.token || req.query.token || req.headers['x-access-token'];
+    var token = req.headers['x-access-token'];
     if (token) {
         // verifies secret and checks exp
         jwt.verify(token, superSecret, function (err, decoded) {
@@ -13,9 +14,22 @@ exports.loginRequired = function (req, res, next) {
                 });
             } else {
                 // if everything is good, save to request for use in other routes
-                req.decoded = decoded;
-                console.log(decoded);
-                next();
+                if (!decoded.iat) {
+                    return res.status(403).send({
+                        success: false,
+                        message: 'No token provided.'
+                    });
+                    //iat is short for is available till
+                } else if (decoded.iat < Date.now()) {
+                    return res.status(498).send({
+                        success: false,
+                        message: 'Token expired.'
+                    });
+                } else {
+                    req.decoded = decoded;
+                    next();
+                }
+
             }
         });
     } else {
