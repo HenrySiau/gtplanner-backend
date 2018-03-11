@@ -5,6 +5,7 @@ var morgan = require('morgan');
 var mongoose = require('mongoose');
 var apiRouter = require('./api/routers').apiRouter;
 var cors = require('cors');
+var session = require('express-session');
 
 
 const server = express();

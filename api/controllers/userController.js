@@ -9,7 +9,7 @@ exports.register = function (req, res) {
         req.body.userName &&
         req.body.password &&
         req.body.passwordConfirm) {
-        if (req.body.password != req.body.passwordConf) return res.json({
+        if (req.body.password != req.body.passwordConfirm) return res.status(400).json({
             success: false,
             message: 'password and confirm password not match'
         });
@@ -23,7 +23,7 @@ exports.register = function (req, res) {
         //TODO: more specific error handlings required
         // TODO: user name validation required
         // TODO: consider using express passport
-        User.create(userData, function (err) {
+        User.create(userData, function (err, newUser) {
             if (err) {
                 console.error('Can not create User name: ' + req.body.username);
                 return res.status(500).json({
@@ -31,9 +31,17 @@ exports.register = function (req, res) {
                     message: 'can not create user'
                 });
             } else {
+                const payload = {
+                    userId: newUser._id,
+                    // iat is short for is available till
+                    iat: Date.now() + config.JWTDurationMS
+                };
+                var token = jwt.sign(payload, superSecret);
                 return res.status(200).json({
                     success: true,
-                    message: 'new user created'
+                    message: 'new user created',
+                    token: token,
+                    userId: newUser._id
                 });
             }
         });
@@ -59,7 +67,7 @@ exports.signIn = function (req, res) {
                 const payload = {
                     userId: user._id,
                     // iat is short for is available till
-                    iat: Date.now()+config.JWTValidForMS
+                    iat: Date.now() + config.JWTDurationMS
                 };
                 var token = jwt.sign(payload, superSecret);
                 res.status(200).json({
