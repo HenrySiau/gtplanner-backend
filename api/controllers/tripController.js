@@ -7,3 +7,14 @@ exports.createTrip = function (req, res) {
         inviteCode: '123abc'
     });
 }
+
+exports.verifyInvitationCode = function (req, res) {
+    //TODO implement
+    // This is only dummy resonse
+    console.log(req.decodedJWT);
+    return res.status(200).json({
+        success: true,
+        tripName: 'LA Trip',
+        tripOwner: req.decodedJWT.userId
+    });
+}

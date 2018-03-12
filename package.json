@@ -30,6 +30,7 @@
         "uuid": "^3.2.1"
     },
     "devDependencies": {
+        "jsdoc": "^3.5.5",
         "nodemon": "^1.14.12"
     }
 }

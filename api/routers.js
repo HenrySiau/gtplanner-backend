@@ -9,6 +9,7 @@ router.get('/echouser', userControllers.echoUser);
 // for testing middleware
 router.get('/getuser', loginRequired, userControllers.getUser);
 router.post('/post/trip/new', loginRequired, tripControllers.createTrip);
+router.post('/post/invite/code/verify', loginRequired, tripControllers.verifyInvitationCode);
 
 router.post('/post/signin', userControllers.signIn);
 router.post('/post/register', userControllers.register);
