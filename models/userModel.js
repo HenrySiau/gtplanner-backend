@@ -51,8 +51,8 @@ UserSchema.pre('save', function (next) {
 // Do not declare statics using ES6 arrow functions (=>)
 UserSchema.statics.authenticate = function (email, password, callback) {
     User.findOne({
-            email: email
-        })
+        email: email
+    })
         .exec(function (err, user) {
             if (err) {
                 return callback(err);
@@ -70,7 +70,23 @@ UserSchema.statics.authenticate = function (email, password, callback) {
         });
 };
 
+UserSchema.statics.doesEmailExist = function (email, callback) {
+    User.findOne({
+        email: email
+    })
+        .exec(function (err, user) {
+            if (err) {
+                return callback(err);
+            } 
+            if (user) {
+                return callback(null, true);
+            }
+            return callback(null, false);
+        });
+
+};
+
 const User = mongoose.model('User', UserSchema);
 module.exports = {
-User: User
+    User: User
 }

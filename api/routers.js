@@ -13,6 +13,7 @@ router.post('/post/invite/code/verify', loginRequired, tripControllers.verifyInv
 
 router.post('/post/signin', userControllers.signIn);
 router.post('/post/register', userControllers.register);
+router.post('/post/email/exist', userControllers.validateEmailExist);
 
 
 exports.apiRouter = router;

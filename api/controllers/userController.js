@@ -85,6 +85,28 @@ exports.signIn = function (req, res) {
     }
 };
 
+exports.validateEmailExist = function (req, res) {
+    if (req.body.email) {
+        User.doesEmailExist(req.body.email, function(err, result){
+            if (err) {
+                console.error('err:' + err);
+                return res.status(500).json({
+                    message: 'Server Side error'
+                });
+            } 
+            if(result === true) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Email already exist please'
+                });
+            }
+            return res.status(200).json({
+                success: true,
+                message: 'Email ok to be used'
+            });
+        })
+    }
+}
 // for testing data base connection
 exports.echoUser = function (req, res) {
     User.findOne().exec(function (err, user) {
