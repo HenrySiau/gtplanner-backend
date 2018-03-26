@@ -8,6 +8,7 @@ var loginRequired = require('../helper').loginRequired;
 router.get('/echouser', userControllers.echoUser);
 // for testing middleware
 router.get('/getuser', loginRequired, userControllers.getUser);
+router.get('/get/trip', loginRequired, tripControllers.tripInfo);
 router.post('/post/trip/new', loginRequired, tripControllers.createTrip);
 router.post('/post/invite/code/verify', loginRequired, tripControllers.verifyInvitationCode);
 
