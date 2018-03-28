@@ -17,15 +17,14 @@ exports.createTrip = function (req, res) {
 exports.verifyInvitationCode = function (req, res) {
     //TODO implement
     // This is only dummy resonse
-    if (req.body.code === '123abc') {
+    if (req.body.inviteCode === '123abc') {
         return res.status(200).json({
             success: true,
-            tripName: 'LA Trip',
-            tripOwner: req.decodedJWT.userId
+            tripName: 'LA Trip'
         });
     }
     else {
-        return res.status(400).json({
+        return res.status(200).json({
             success: false,
         });
     }
@@ -89,6 +88,29 @@ exports.tripInfo = function (req, res) {
             });
         }
 
+    } else {
+        return res.status(400).json({
+            success: false,
+        });
+    }
+}
+
+exports.getInviteCode = function (req, res) {
+    //TODO implement
+    // This is only dummy resonse
+    if (req.body) {
+        if (req.query.tripId) {
+            // TODO verify if user belong to this trip
+            console.log(req.decodedJWT);
+            return res.status(200).json({
+                success: true,
+                inviteCode: '123abc'
+            });
+        } else {
+            return res.status(400).json({
+                success: false,
+            });
+        }
     } else {
         return res.status(400).json({
             success: false,
