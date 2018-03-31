@@ -10,8 +10,10 @@ router.get('/echouser', userControllers.echoUser);
 router.get('/getuser', loginRequired, userControllers.getUser);
 router.get('/get/trip', loginRequired, tripControllers.tripInfo);
 router.get('/get/invitecode', loginRequired, tripControllers.getInviteCode);
+router.get('/get/recenttrips', loginRequired, tripControllers.getRecentTrips);
 router.post('/post/trip/new', loginRequired, tripControllers.createTrip);
 router.post('/post/invite/code/verify', tripControllers.verifyInvitationCode);
+router.post('/post/members/invite', loginRequired, tripControllers.inviteMembers);
 
 router.post('/post/signin', userControllers.signIn);
 router.post('/post/register', userControllers.register);
