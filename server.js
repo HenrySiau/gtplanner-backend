@@ -21,7 +21,7 @@ server.use(morgan('dev'));
 
 // Database Connection config
 const mongooseOptions = {
-    autoIndex: false, // Don't build indexes
+    autoIndex: true, // Don't build indexes
     reconnectTries: Number.MAX_VALUE, // Never stop trying to reconnect
     reconnectInterval: 500, // Reconnect every 500ms
     poolSize: 10, // Maintain up to 10 socket connections
@@ -29,7 +29,7 @@ const mongooseOptions = {
     bufferMaxEntries: 0
 };
 
-mongoose.connect('mongodb://localhost/test', mongooseOptions).then(
+mongoose.connect('mongodb://localhost/test3', mongooseOptions).then(
     () => {
         console.info('mongoose.connect ready to use');
     },
