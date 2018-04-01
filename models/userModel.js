@@ -5,7 +5,6 @@ var Schema = mongoose.Schema;
 const UserSchema = new Schema({
     userName: {
         type: String,
-        maxlength: 100,
         required: [true, 'User name required'],
         validate: {
             validator: function (v) {
@@ -22,7 +21,6 @@ const UserSchema = new Schema({
     email: {
         type: String,
         index: true,
-        maxlength: 100,
         validate: {
             validator: function (v) {
                 return /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(v);
@@ -51,12 +49,11 @@ const UserSchema = new Schema({
             },
             message: 'password format invalid'
         },
-        maxlength: 100,
         required: true
     },
     profilePhoto: {
-        type: String,
-        maxlength: 200
+        type: Schema.Types.ObjectId,
+        ref: 'ProfilePhoto'
     },
     created: {
         type: Date,
