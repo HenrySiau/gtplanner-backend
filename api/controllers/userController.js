@@ -4,6 +4,10 @@ var mongoose = require('mongoose');
 var jwt = require('jsonwebtoken');
 var config = require('../../config');
 
+strip = (str) =>{
+    return str.replace(/^\s+|\s+$/g, '');
+}
+
 exports.register = function (req, res) {
     if (req.body.email &&
         req.body.userName &&
@@ -13,22 +17,25 @@ exports.register = function (req, res) {
             success: false,
             message: 'password and confirm password not match'
         });
+       
         var userData = {
-            email: req.body.email,
-            userName: req.body.userName,
-            password: req.body.password,
-            phoneNumber: req.body.phoneNumber
+            email: strip(req.body.email),
+            userName: strip(req.body.userName),
+            password: strip(req.body.password),
+            phoneNumber: req.body.phoneNumber && strip(req.body.phoneNumber)
         };
+        // console.log('userData: ' + userData.email);
         //use schema.create to insert data into the db
         //TODO: more specific error handlings required
         // TODO: user name validation required
         // TODO: consider using express passport
         User.create(userData, function (err, newUser) {
             if (err) {
+                // console.log(err);
                 console.error('Can not create User name: ' + req.body.username);
                 return res.status(500).json({
                     success: false,
-                    message: 'can not create user'
+                    errors: err.errors
                 });
             } else {
                 const payload = {
@@ -115,10 +122,12 @@ exports.validateEmailExist = function (req, res) {
     }
 }
 // for testing data base connection
-exports.echoUser =  (req, res) => {
-    User.findOne().exec( (err, user) => {
-        if (err) return console.err(err);
-        res.send('User name: ' + user.userName);
+exports.echoUsers =  (req, res) => {
+    User.find({email: 'aaa@aaa.com'}).
+    limit(1000).
+    exec( (err, users) => {
+        if (err) res.send(err);
+        res.send(users);
     })
 };
 
