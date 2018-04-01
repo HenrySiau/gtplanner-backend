@@ -6,26 +6,57 @@ const UserSchema = new Schema({
     userName: {
         type: String,
         maxlength: 100,
-        required: true
+        required: [true, 'User name required'],
+        validate: {
+            validator: function (v) {
+                if (v.length < 2 || v.length > 20) {
+                    return false;
+                } else {
+                    return true;
+                }
+            },
+            message: '{VALUE} is shorter than 2 or longer than 20 characters'
+        },
     },
+
     email: {
         type: String,
+        index: true,
         maxlength: 100,
-        required: true,
+        validate: {
+            validator: function (v) {
+                return /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(v);
+            },
+            message: '{VALUE} is not a valid email!'
+        },
+        required: [true, 'Email required'],
         unique: true
     },
+    
     phoneNumber: {
         type: String,
         maxlength: 30
     },
+
     password: {
         type: String,
-        maxlength: 300,
+        validate: {
+            validator: function (v) {
+                if (v.length < 8 || v.length > 30) {
+                    return false;
+                } 
+                else {
+                    return ((/[a-z]+[A-Z]+[0-9]/g).test(v))
+                }
+            },
+            message: 'password format invalid'
+        },
+        maxlength: 100,
         required: true
     },
     profilePhoto: {
         type: String,
-        maxlength: 300
+        maxlength: 200
     },
     created: {
         type: Date,
@@ -36,6 +67,8 @@ const UserSchema = new Schema({
         default: false
     }
 });
+
+
 //hashing a password before saving it to the database
 UserSchema.pre('save', function (next) {
     var user = this;
@@ -77,7 +110,7 @@ UserSchema.statics.doesEmailExist = function (email, callback) {
         .exec(function (err, user) {
             if (err) {
                 return callback(err);
-            } 
+            }
             if (user) {
                 return callback(null, true);
             }
@@ -85,6 +118,8 @@ UserSchema.statics.doesEmailExist = function (email, callback) {
         });
 
 };
+
+// UserSchema.index({email: true});
 
 const User = mongoose.model('User', UserSchema);
 module.exports = {
