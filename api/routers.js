@@ -4,10 +4,9 @@ var userControllers = require('./controllers/userController');
 var tripControllers = require('./controllers/tripController');
 var loginRequired = require('../helper').loginRequired;
 
-// for testing database connection
-router.get('/echouser', userControllers.echoUser);
 // for testing middleware
 router.get('/getuser', loginRequired, userControllers.getUser);
+router.get('/users', userControllers.echoUsers);
 router.get('/get/trip', loginRequired, tripControllers.tripInfo);
 router.get('/get/invitecode', loginRequired, tripControllers.getInviteCode);
 router.get('/get/recenttrips', loginRequired, tripControllers.getRecentTrips);
