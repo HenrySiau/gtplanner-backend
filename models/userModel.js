@@ -62,7 +62,11 @@ const UserSchema = new Schema({
     isSocialAuth: {
         type: Boolean,
         default: false
-    }
+    },
+    defaultTrip: {
+        type: Schema.Types.ObjectId,
+        ref: 'Trip'
+    },
 });
 
 

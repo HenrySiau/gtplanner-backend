@@ -1,4 +1,5 @@
 var Trip = require('../../models/tripModel').Trip;
+var User = require('../../models/userModel').User;
 var mongoose = require('mongoose');
 var config = require('../../config');
 
@@ -63,131 +64,47 @@ exports.createTrip = function (req, res) {
                 };
                 Trip.create(tripData, function (err, newTrip) {
                     if (err) {
-                        console.log(err);
+                        console.error(err);
                         return res.status(200).json({
                             success: false,
                             errors: err.errors
                         });
                     } else {
-                        return res.status(200).json({
-                            success: true,
-                            newTrip: newTrip
-                        });
+                        User.update({ _id: req.decodedJWT.userId }, {
+                            defaultTrip: newTrip._id
+                        }, (err) => {
+                            if (err) {
+                                console.error(err);
+                                return res.status(200).json({
+                                    success: false,
+                                    errors: err.errors
+                                });
+                            } else {
+                                return res.status(200).json({
+                                    success: true,
+                                    tripInfo: {
+                                        tripId: newTrip._id,
+                                        title: newTrip.title,
+                                        description: newTrip.description,
+                                        owner: newTrip.owner,
+                                        members: newTrip.members,
+                                        startDate: newTrip.startDate,
+                                        endDate: newTrip.endDate,
+                                        invitationCode: newTrip.invitationCode
+                                    }
+                                });
+                            }
+                        }
+                        )
+
                     }
-                })
+                });
+
+            }
+
+            asyncCall();
         }
-
-        asyncCall();
-
-        // let generateInvitationCodePromise = new Promise(
-        //     (resolve, reject) => {
-        //         resolve(generateInvitationCode());
-        //             // console.log('generateInvitationCode');
-        //             // let code = randomString(8);
-        //             // console.log('generateInvitationCode: ' + code);
-        //             // Trip.findOne({ invitationCode: code }).exec(
-        //             //     (err, trip) => {
-        //             //         if (err) console.error(err);
-        //             //         if (trip) {
-        //             //             return generateInvitationCode();
-        //             //         } else {
-        //             //             resolve(code)
-        //             //         }
-        //             //     }
-        //             // )
-        //     }
-        // );
-        // generateInvitationCodePromise.then(
-        //     (invitationCode) => {
-        //         console.log('invitationCode: ' + invitationCode)
-        //         const tripData = {
-        //             title: strip(req.body.tripName),
-        //             description: strip(req.body.description),
-        //             owner: req.decodedJWT.userId,
-        //             invitationCode: invitationCode,
-        //             members: [req.decodedJWT.userId],
-        //             startDate: req.body.startDate,
-        //             endDate: req.body.endDate
-        //         };
-
-        //         Trip.create(tripData, function (err, newTrip) {
-        //             if (err) {
-        //                 console.log(err);
-        //                 return res.status(200).json({
-        //                     success: false,
-        //                     errors: err.errors
-        //                 });
-        //             } else {
-        //                 return res.status(200).json({
-        //                     success: true,
-        //                     newTrip: newTrip
-        //                 });
-        //             }
-        //         })
-        //     }
-        // ).catch(
-        //     (reason) => {
-        //         console.error(reason);
-        //     }
-        // )
-
-        // Promise.resolve()
-        // .then(
-        //     function generateInvitationCode(){
-        //         console.log('generateInvitationCode');
-        //         let code = randomString(1);
-        //         console.log('code: ' + code);
-        //         Trip.findOne({invitationCode: code}).exec(
-        //             (err, trip) => {
-        //                 if(err) console.error(err);
-        //                 if(trip){
-        //                     var promise = Promise.resolve().then(
-        //                         function(){
-        //                             return(generateInvitationCode());
-        //                         }
-        //                     )
-        //                     return promise;
-        //                 }else{
-        //                     console.log('return code: ' + code);
-        //                     return code 
-        //                 }
-        //             }
-        //         ).then(
-        //             (code) => {
-        //                 console.log('then after exec, code: :' + code);
-        //             }
-        //         )
-        //     }
-        // ).then(
-        //     (code) =>{
-        //         console.log('then: code=' + code);
-        //     }
-        // )
-        // var tripData = {
-        //     title: strip(req.body.tripName),
-        //     description: strip(req.body.description),
-        //     owner: req.decodedJWT.userId,
-        //     invitationCode: generateInvitationCode(),
-        //     members: [req.decodedJWT.userId],
-        //     startDate: req.body.startDate,
-        //     endDate: req.body.endDate
-        // };
-        // Trip.create(tripData, function (err, newTrip) {
-        //     if (err) {
-        //         console.log(err);
-        //         return res.status(200).json({
-        //             success: false,
-        //             errors: err.errors
-        //         });
-        //     } else {
-        //         return res.status(200).json({
-        //             success: true,
-        //             newTrip: newTrip
-        //         });
-        //     }
-        // })
     }
-}
 }
 
 exports.verifyInvitationCode = function (req, res) {
