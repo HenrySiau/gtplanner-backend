@@ -67,7 +67,7 @@ exports.createTrip = function (req, res) {
                         console.error(err);
                         return res.status(200).json({
                             success: false,
-                            errors: err.errors
+                            error: err
                         });
                     } else {
                         User.update({ _id: req.decodedJWT.userId }, {
@@ -77,7 +77,7 @@ exports.createTrip = function (req, res) {
                                 console.error(err);
                                 return res.status(200).json({
                                     success: false,
-                                    errors: err.errors
+                                    error: err
                                 });
                             } else {
                                 return res.status(200).json({
@@ -123,89 +123,94 @@ exports.verifyInvitationCode = function (req, res) {
     }
 }
 
-exports.tripInfo = function (req, res) {
+exports.getTripInfo = function (req, res) {
     //TODO implement
     // This is only dummy resonse
+    const tripId = req.query.tripId ? req.query.tripId : '';
+
     if (req.body) {
-        if (req.query.tripId) {
-            return res.status(200).json({
-                success: true,
-                tripInfo: {
-                    tripId: '12345',
-                    inviteCode: '123abc',
-                    tripName: req.query.tripId + ' LA-Vegas 5 days summer trip',
-                    members: [
-                        {
-                            userId: 'a123',
-                            userName: 'Henry',
-                            imgUrl: '/img/henry.jpg'
-                        },
-                        {
-                            userId: 'a124',
-                            userName: 'Sophia',
-                            imgUrl: '/img/sophia.jpg'
-                        },
-                        {
-                            userId: 'a125',
-                            userName: 'Kelvin ',
-                            imgUrl: '/img/kelvin.jpg'
-                        },
-                    ]
+        if (tripId) {
+            Trip.findOne({ _id: tripId }).exec((err, trip) => {
+                if (err) {
+                    console.error(err);
+                    return res.status(200).json({
+                        success: false,
+                        error: err
+                    });
+                }
+                if (trip) {
+                    return res.status(200).json({
+                        success: true,
+                        tripInfo: {
+                            tripId: trip._id,
+                            title: trip.title,
+                            description: trip.description,
+                            owner: trip.owner,
+                            members: trip.members,
+                            startDate: trip.startDate,
+                            endDate: trip.endDate,
+                            invitationCode: trip.invitationCode
+                        }
+                    });
+                } else {
+                    return res.status(200).json({
+                        success: false,
+                        error: 'can not find a trip with tripId provided'
+                    });
                 }
             });
         } else {
-            // TODO fetch data base for defaultTrip
-            // then return last visited active trip
-            return res.status(200).json({
-                success: true,
-                tripInfo: {
-                    tripId: '12345',
-                    inviteCode: '123abc',
-                    tripName: 'Default LA-Vegas 5 days summer trip',
-                    members: [
-                        {
-                            userId: 'a123',
-                            userName: 'Henry',
-                            imgUrl: '/img/henry.jpg'
-                        },
-                        {
-                            userId: 'a124',
-                            userName: 'Sophia',
-                            imgUrl: '/img/sophia.jpg'
-                        },
-                        {
-                            userId: 'a125',
-                            userName: 'Kelvin ',
-                            imgUrl: '/img/kelvin.jpg'
-                        },
-                    ]
-                }
-            });
+            // get defaultTrip
+            User.findOne({ _id: req.decodedJWT.userId }).select('defaultTrip').
+                exec((err, user) => {
+                    if (err) {
+                        console.error(err);
+                        return res.status(200).json({
+                            success: false,
+                            error: err
+                        });
+                    }
+                    if (user) {
+                        Trip.findOne({ _id: user.defaultTrip }).exec((err, trip) => {
+                            if (err) {
+                                console.error(err);
+                                return res.status(200).json({
+                                    success: false,
+                                    error: err
+                                });
+                            }
+                            if (trip) {
+                                return res.status(200).json({
+                                    success: true,
+                                    tripInfo: {
+                                        tripId: trip._id,
+                                        title: trip.title,
+                                        description: trip.description,
+                                        owner: trip.owner,
+                                        members: trip.members,
+                                        startDate: trip.startDate,
+                                        endDate: trip.endDate,
+                                        invitationCode: trip.invitationCode
+                                    }
+                                });
+                            } else {  // if there is no default trip
+                                return res.status(200).json({
+                                    success: false,
+                                    error: 'there is no default trip'
+                                });
+                            }
+                        });
+                    }
+                    // if can not find a user
+                    else {
+                        return res.status(200).json({
+                            success: false,
+                            error: 'can not find the user with userId provided'
+                        });
+                    }
+                })
         }
 
-    } else {
-        return res.status(400).json({
-            success: false,
-        });
-    }
-}
-
-exports.getInviteCode = function (req, res) {
-    //TODO implement
-    // This is only dummy resonse
-    if (req.body) {
-        if (req.query.tripId) {
-            // TODO verify if user belong to this trip
-            console.log(req.decodedJWT);
-            return res.status(200).json({
-                success: true,
-                inviteCode: '123abc'
-            });
-        } else {
-            return res.status(200).json({
-                success: false,
-            });
-        }
     } else {
         return res.status(400).json({
             success: false,
