@@ -12,6 +12,9 @@ const server = express();
 // enable CORSS(Cross Origin Resource Sharing)
 server.use(cors());
 
+// enable public static files
+server.use(express.static('public'));
+
 // use body parser so we can get info from POST and/or URL parameters
 server.use(bodyParser.urlencoded({ extended: false }));
 server.use(bodyParser.json());
