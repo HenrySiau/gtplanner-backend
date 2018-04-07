@@ -123,7 +123,7 @@ exports.validateEmailExist = function (req, res) {
 }
 // for testing data base connection
 exports.echoUsers =  (req, res) => {
-    User.find({email: 'aaa@aaa.com'}).
+    User.find().
     limit(1000).
     exec( (err, users) => {
         if (err) res.send(err);
@@ -139,7 +139,3 @@ exports.getUser = function (req, res) {
     })
 
 };
-
-// exports.echoUser =  (req, res) => {
-//     res.send('User name: Henry');
-// };

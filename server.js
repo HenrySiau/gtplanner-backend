@@ -5,6 +5,7 @@ var morgan = require('morgan');
 var mongoose = require('mongoose');
 var apiRouter = require('./api/routers').apiRouter;
 var cors = require('cors');
+var path = require('path');
 
 
 const server = express();
@@ -49,6 +50,10 @@ db.once('open', function () {
 });
 
 server.use('/api', apiRouter);
+
+server.get('/', (req, res) => {
+    res.sendFile(path.join(_dirname + '/public/index.html'));
+});
 
 server.listen(config.port, config.host, () => {
     console.info('Express listening on port', config.port);

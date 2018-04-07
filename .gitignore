@@ -58,3 +58,5 @@ public/bundle.js.map
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+instanceConfig.js
