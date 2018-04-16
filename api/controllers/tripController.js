@@ -120,15 +120,44 @@ exports.createTrip = function (req, res) {
 exports.verifyInvitationCode = function (req, res) {
     //TODO implement
     // This is only dummy resonse
-    if (req.body.inviteCode === '123abc') {
-        return res.status(200).json({
-            success: true,
-            tripName: 'LA Trip'
+    if (req.body.invitationCode) {
+        console.log('invitationCode: ' + req.body.invitationCode);
+        Trip.findOne({ invitationCode: req.body.invitationCode }).exec((err, trip) => {
+            if (err) {
+                console.error(err);
+                return res.status(200).json({
+                    success: false,
+                    error: err
+                });
+            }
+            if (trip) {
+                console.log('found the trip');
+                return res.status(200).json({
+                    success: true,
+                    tripInfo: {
+                        tripId: trip._id,
+                        title: trip.title,
+                        description: trip.description,
+                        owner: trip.owner,
+                        members: trip.members,
+                        startDate: trip.startDate,
+                        endDate: trip.endDate,
+                        invitationCode: trip.invitationCode
+                    }
+                });
+            } else {
+                console.log('can not find the trip with invitationCode')
+                return res.status(200).json({
+                    success: false,
+                    error: 'can not find a trip with tripId provided'
+                });
+            }
         });
     }
     else {
         return res.status(200).json({
-            success: false,
+            success: true,
+            invitationCode: req.body.invitationCode
         });
     }
 }
