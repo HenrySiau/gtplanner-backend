@@ -7,7 +7,7 @@ const TripSchema = new Schema({
         required: [true, 'trip title required'],
         validate: {
             validator: function (v) {
-                if (v.length < 2 || v.length > 50) {
+                if (v.length < 2 || v.length > 31) {
                     return false;
                 } else {
                     return true;
@@ -18,7 +18,7 @@ const TripSchema = new Schema({
     },
     description: {
         type: String,
-        maxlength: 500
+        maxlength: 301
     },
     owner: {
         type: Schema.Types.ObjectId,
