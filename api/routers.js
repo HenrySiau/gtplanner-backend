@@ -16,6 +16,7 @@ router.post('/post/members/invite', loginRequired, tripControllers.inviteMembers
 router.post('/post/signin', userControllers.signIn);
 router.post('/post/register', userControllers.register);
 router.post('/post/email/exist', userControllers.validateEmailExist);
+router.post('/post/login/facebook', userControllers.LoginWithFacebook);
 
 
 exports.apiRouter = router;

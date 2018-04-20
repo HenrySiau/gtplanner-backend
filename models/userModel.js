@@ -40,6 +40,9 @@ const UserSchema = new Schema({
         type: String,
         validate: {
             validator: function (v) {
+                if(v===''){
+                    return true;
+                }
                 if (v.length < 8 || v.length > 30) {
                     return false;
                 } 
@@ -49,7 +52,7 @@ const UserSchema = new Schema({
             },
             message: 'password format invalid'
         },
-        required: true
+        default: ''
     },
     profilePhoto: {
         type: Schema.Types.ObjectId,
@@ -84,6 +87,9 @@ UserSchema.pre('save', function (next) {
 // Authenticate input against database
 // Do not declare statics using ES6 arrow functions (=>)
 UserSchema.statics.authenticate = function (email, password, callback) {
+    if(password===''){
+        return callback(err);
+    }
     User.findOne({
         email: email
     })
