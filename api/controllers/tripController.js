@@ -4,6 +4,8 @@ var mongoose = require('mongoose');
 var config = require('../../config');
 var instanceConfig = require('../../instanceConfig');
 const nodemailer = require('nodemailer');
+var superSecret = require('../../config').superSecret;
+var jwt = require('jsonwebtoken');
 
 var transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -22,7 +24,7 @@ const strip = (str) => {
 }
 
 // generate random string
-const randomString = function (length) {
+const generateRandomString = function (length) {
     var text = "";
     var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     for (var i = 0; i < length; i++) {
@@ -34,7 +36,7 @@ const randomString = function (length) {
 // re-generate invitation code if it's been used
 const generateInvitationCode = (resolve) => {
     console.log('generateInvitationCode');
-    let code = randomString(8);
+    let code = generateRandomString(8);
     console.log('generateInvitationCode: ' + code);
     var query = Trip.findOne({ invitationCode: code });
     query.then((trip) => {
@@ -131,36 +133,105 @@ exports.verifyInvitationCode = function (req, res) {
                 });
             }
             if (trip) {
-                if(req.body.token){
-                    
+                if (req.body.token) {
+                    jwt.verify(req.body.token, superSecret, function (err, decoded) {
+                        if (err) {
+                            return res.json({
+                                success: false,
+                                message: 'Failed to authenticate token.'
+                            });
+                        } else {    //successfully decoded the token
+                            // if everything is good, save to request for use in other routes
+                            if (!decoded.iat) {
+                                return res.status(403).send({
+                                    success: false,
+                                    message: 'No token provided.'
+                                });
+                                //iat is short for is available till
+                            } else if (decoded.iat < Date.now()) {
+                                return res.status(498).send({
+                                    success: false,
+                                    message: 'Token expired.'
+                                });
+                            } else {
+                                User.findById(decoded.userId).exec(
+                                    (error, user) => {
+                                        if (error) {
+                                            console.error(error);
+                                            res.status(200).json({
+                                                success: false,
+                                                message: 'can not find this User in database'
+                                            });
+                                        } else {
+                                            // update token
+                                            const payload = {
+                                                userId: user._id,
+                                                // iat is short for is available till
+                                                iat: Date.now() + config.JWTDurationMS
+                                            };
+                                            const token = jwt.sign(payload, superSecret);
+                                            res.status(200).json({
+                                                success: true,
+                                                token: token,
+                                                tripInfo: {
+                                                    tripId: trip._id,
+                                                    title: trip.title,
+                                                    description: trip.description,
+                                                    owner: trip.owner,
+                                                    members: trip.members,
+                                                    startDate: trip.startDate,
+                                                    endDate: trip.endDate,
+                                                    invitationCode: trip.invitationCode
+                                                },
+                                                userInfo: {
+                                                    userId: user._id,
+                                                    userName: user.userName,
+                                                    email: user.email,
+                                                    phoneNumber: user.phoneNumber,
+                                                    profilePicture: user.profilePicture,
+                                                    facebookProfilePictureURL: user.facebookProfilePictureURL
+                                                }
+                                            });
+                                        }
+                                    }
+                                )
+                            }
+
+                        }
+                    });
+
+
+
+                } else {    // if no token in request body
+                    console.log('found the trip');
+                    return res.status(200).json({
+                        success: true,
+                        tripInfo: {
+                            tripId: trip._id,
+                            title: trip.title,
+                            description: trip.description,
+                            owner: trip.owner,
+                            members: trip.members,
+                            startDate: trip.startDate,
+                            endDate: trip.endDate,
+                            invitationCode: trip.invitationCode
+                        }
+                    });
                 }
-                console.log('found the trip');
-                return res.status(200).json({
-                    success: true,
-                    tripInfo: {
-                        tripId: trip._id,
-                        title: trip.title,
-                        description: trip.description,
-                        owner: trip.owner,
-                        members: trip.members,
-                        startDate: trip.startDate,
-                        endDate: trip.endDate,
-                        invitationCode: trip.invitationCode
-                    }
-                });
-            } else {
+
+            } else {    // if no trip match the invitation code
                 console.log('can not find the trip with invitationCode')
                 return res.status(200).json({
                     success: false,
-                    error: 'can not find a trip with tripId provided'
+                    error: 'can not find a trip with this invitation code'
                 });
             }
         });
     }
-    else {
+    else { // no invitation code in request body
         return res.status(200).json({
-            success: true,
-            invitationCode: req.body.invitationCode
+            success: false,
+            message: 'No invitation code received'
         });
     }
 }
