@@ -4,6 +4,7 @@ var superSecret = require('./config').superSecret;
  * This is a description of the loginRequired middleware
  */
 // TODO: add a function to limit heavy request
+// TODO: add redis database to store recently visited tokens 
 exports.loginRequired = function (req, res, next) {
     var token = req.headers['x-access-token'];
     if (token) {

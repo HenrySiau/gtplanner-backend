@@ -38,6 +38,10 @@ exports.register = function (req, res) {
                     errors: err.errors
                 });
             } else {
+                if (req.body.inviteCode) {
+                    // todo: join 
+                    console.log(req.body.inviteCode);
+                }
                 const payload = {
                     userId: newUser._id,
                     // iat is short for is available till
@@ -116,7 +120,9 @@ exports.LoginWithFacebook = function (req, res) {
                 var userData = {
                     email: req.body.email,
                     userName: req.body.userName,
-                    isSocialAuth: true
+                    isSocialAuth: true,
+                    facebookProfilePictureURL: req.body.facebookProfilePictureURL
+
                 };
                 User.create(userData, function (err, newUser) {
                     if (err) {
@@ -137,7 +143,13 @@ exports.LoginWithFacebook = function (req, res) {
                             success: true,
                             message: 'new user created',
                             token: token,
-                            userId: newUser._id
+                            userInfo: {
+                                userId: newUser._id,
+                                userName: newUser.userName,
+                                email: newUser.email,
+                                phoneNumber: newUser.phoneNumber,
+                                profilePicture: newUser.profilePicture || '',
+                            },
                         });
                     }
                 });
@@ -152,7 +164,14 @@ exports.LoginWithFacebook = function (req, res) {
                 res.status(200).json({
                     success: true,
                     token: token,
-                    userId: user._id
+                    userInfo: {
+                        userId: user._id,
+                        userName: user.userName,
+                        email: user.email,
+                        phoneNumber: user.phoneNumber,
+                        profilePicture: user.profilePicture,
+                        facebookProfilePictureURL: user.facebookProfilePictureURL
+                    },
                 });
             }
         });
@@ -163,6 +182,71 @@ exports.LoginWithFacebook = function (req, res) {
         });
     }
 };
+exports.LoginWithToken = function (req, res) {
+    if (req.body.token) {
+        jwt.verify(req.body.token, superSecret, function (err, decoded) {
+            if (err) {
+                return res.json({
+                    success: false,
+                    message: 'Failed to authenticate token.'
+                });
+            } else {
+                // if everything is good, save to request for use in other routes
+                if (!(decoded.iat && decoded.userId)) {
+                    return res.status(200).send({
+                        success: false,
+                        message: 'Invalid token.'
+                    });
+                    //iat is short for is available till
+                } else if (decoded.iat < Date.now()) {
+                    return res.status(200).send({
+                        success: false,
+                        message: 'Token expired.'
+                    });
+                } else {
+                    // fetch userInfo from database
+                    User.findById(decoded.userId).exec(
+                        (error, user) => {
+                            if (error) {
+                                console.error(error);
+                                res.status(200).json({
+                                    success: false,
+                                    message: 'can not find this User in database'
+                                });
+                            } else {
+                                // update token
+                                const payload = {
+                                    userId: user._id,
+                                    // iat is short for is available till
+                                    iat: Date.now() + config.JWTDurationMS
+                                };
+                                const token = jwt.sign(payload, superSecret);
+                                res.status(200).json({
+                                    success: true,
+                                    token: token,
+                                    userInfo: {
+                                        userId: user._id,
+                                        userName: user.userName,
+                                        email: user.email,
+                                        phoneNumber: user.phoneNumber,
+                                        profilePicture: user.profilePicture,
+                                        facebookProfilePictureURL: user.facebookProfilePictureURL
+                                    }
+                                });
+                            }
+                        }
+                    )
+                }
+            }
+        });
+    } else {
+        res.status(200).json({
+            success: false,
+            message: 'Invalid token'
+        });
+    }
+
+}
 
 exports.validateEmailExist = function (req, res) {
     if (req.body.email) {

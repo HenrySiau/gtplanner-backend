@@ -131,6 +131,9 @@ exports.verifyInvitationCode = function (req, res) {
                 });
             }
             if (trip) {
+                if(req.body.token){
+                    
+                }
                 console.log('found the trip');
                 return res.status(200).json({
                     success: true,

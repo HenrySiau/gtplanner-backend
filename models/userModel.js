@@ -33,7 +33,8 @@ const UserSchema = new Schema({
     
     phoneNumber: {
         type: String,
-        maxlength: 30
+        maxlength: 30,
+        default: ''
     },
 
     password: {
@@ -54,9 +55,13 @@ const UserSchema = new Schema({
         },
         default: ''
     },
-    profilePhoto: {
-        type: Schema.Types.ObjectId,
-        ref: 'ProfilePhoto'
+    profilePicture: {
+        type: String,
+        default: ''
+    },
+    facebookProfilePictureURL: {
+        type: String,
+        default: ''
     },
     created: {
         type: Date,
