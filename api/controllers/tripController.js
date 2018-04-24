@@ -240,7 +240,6 @@ exports.getTripInfo = function (req, res) {
     //TODO implement
     // This is only dummy resonse
     const tripId = req.query.tripId ? req.query.tripId : '';
-
     if (req.body) {
         if (tripId) {
             Trip.findOne({ _id: tripId }).exec((err, trip) => {
@@ -359,8 +358,6 @@ exports.inviteMembers = function (req, res) {
             success: false
         });
     }
-
-
 }
 
 exports.getRecentTrips = function (req, res) {
@@ -384,4 +381,81 @@ exports.getRecentTrips = function (req, res) {
             },
         ]
     });
+}
+
+exports.addUserToTrip = function (req, res) {
+    // TODO: add user to trip member list
+    if (req.body.invitationCode && req.body.token) {
+        console.log(req.body);
+        jwt.verify(req.body.token, superSecret, function (err, decoded) {
+            if (err) {
+                return res.json({
+                    success: false,
+                    message: 'Failed to authenticate token.'
+                });
+            } else {
+                // if everything is good, save to request for use in other routes
+                if (!(decoded.iat && decoded.userId)) {
+                    return res.status(403).send({
+                        success: false,
+                        message: 'No token provided.'
+                    });
+                    //iat is short for is available till
+                } else if (decoded.iat < Date.now()) {
+                    return res.status(498).send({
+                        success: false,
+                        message: 'Token expired.'
+                    });
+                } else {
+                    // add user to the trip
+                    Trip.findOne({ invitationCode: req.body.invitationCode }).exec((err, trip) => {
+                        if (err) {
+                            console.error(err);
+                            return res.status(200).json({
+                                success: false,
+                                message: 'something went wrong'
+                            });
+                        }
+                        if (trip) {
+
+                            if (
+                                trip.members.find((element)=>{return element == decoded.userId;})
+                        ) {
+                                console.log('You are already in this trip');
+                                return res.status(200).json({
+                                    success: true,
+                                });
+                            } else {
+                                let newMembers = trip.members.push(decoded.userId);
+                                trip.members = newMembers;
+                                trip.save((error) => {
+                                    if (err) {
+                                        return res.status(200).json({
+                                            success: false,
+                                            message: 'can not add this user to the trip'
+                                        });
+                                    } else {
+                                        return res.status(200).json({
+                                            success: true,
+                                        });
+                                    }
+                                })
+                            }
+                        } else {    // if no trip match the invitation code
+                            console.log('can not find the trip with invitationCode')
+                            return res.status(200).json({
+                                success: false,
+                                message: 'can not find a trip with this invitation code'
+                            });
+                        }
+                    });
+                }
+            }
+        });
+
+    } else {
+        return res.status(200).json({
+            success: false
+        });
+    }
 }

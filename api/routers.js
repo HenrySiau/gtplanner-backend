@@ -11,6 +11,7 @@ router.get('/get/trip', loginRequired, tripControllers.getTripInfo);
 router.get('/get/recenttrips', loginRequired, tripControllers.getRecentTrips);
 router.post('/post/trip/new', loginRequired, tripControllers.createTrip);
 router.post('/post/invitation/code/verify', tripControllers.verifyInvitationCode);
+router.post('/post/trip/join', tripControllers.addUserToTrip);
 router.post('/post/members/invite', loginRequired, tripControllers.inviteMembers);
 
 router.post('/post/signin', userControllers.signIn);
