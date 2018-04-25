@@ -71,8 +71,8 @@ exports.createTrip = function (req, res) {
                     owner: req.decodedJWT.userId,
                     invitationCode: invitationCode,
                     members: [req.decodedJWT.userId],
-                    startDate: req.body.startDate,
-                    endDate: req.body.endDate
+                    startDate: new Date(req.body.startDate).setHours(0, 0, 0, 0), // set to first second of the date
+                    endDate: new Date(req.body.endDate).setHours(23,59,59,999), // set to last second of the date
                 };
                 Trip.create(tripData, function (err, newTrip) {
                     if (err || !newTrip) {
@@ -357,7 +357,9 @@ exports.getRecentTrips = function (req, res) {
     // This is only dummy resonse
     console.log('getRecentTrips');
     console.log(req.decodedJWT.userId);
-    User.findById(req.decodedJWT.userId, (err, user) => {
+    User.findById(req.decodedJWT.userId, ).
+    populate('trips').
+    exec((err, user) => {
         if (err || !user) {
             return res.status(200).json({
                 success: false,
