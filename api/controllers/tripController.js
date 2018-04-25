@@ -75,45 +75,60 @@ exports.createTrip = function (req, res) {
                     endDate: req.body.endDate
                 };
                 Trip.create(tripData, function (err, newTrip) {
-                    if (err) {
+                    if (err || !newTrip) {
                         console.error(err);
                         return res.status(200).json({
                             success: false,
                             error: err
                         });
                     } else {
-                        User.update({ _id: req.decodedJWT.userId }, {
-                            defaultTrip: newTrip._id
-                        }, (err) => {
-                            if (err) {
-                                console.error(err);
+                        User.findById(req.decodedJWT.userId, (err, user) =>{
+                            
+                            if(err || !user){
+                                console.log(err)
+                                if(!user) {console.log('can not find User')}
                                 return res.status(200).json({
                                     success: false,
-                                    error: err
+                                    message: 'something went wrong' + err
                                 });
-                            } else {
-                                return res.status(200).json({
-                                    success: true,
-                                    tripInfo: {
-                                        tripId: newTrip._id,
-                                        title: newTrip.title,
-                                        description: newTrip.description,
-                                        owner: newTrip.owner,
-                                        members: newTrip.members,
-                                        startDate: newTrip.startDate,
-                                        endDate: newTrip.endDate,
-                                        invitationCode: newTrip.invitationCode
-                                    }
-                                });
-                            }
-                        }
-                        )
+                            }else{
+                                console.log(user);
+                                // const newTripsList = user.trips? user.trips.push(newTrip._id) : [newTrip._id];
+                                user.trips.push(newTrip._id);
+                                console.log('newTrip._id: ' + newTrip._id);
+                                console.log('user.trips: ' + user.trips);
+                                // console.log('newTripsList: ' + newTripsList);
+                                // user.trips = newTripsList;
+                                user.save((err)=>{
+                                    if(err){
+                                        console.log(err);
+                                        return res.status(200).json({
+                                            success: false,
+                                            message: 'something went wrong' + err
+                                        });
+                                    }else{
 
+                                        console.log(user);
+                                        return res.status(200).json({
+                                            success: true,
+                                            tripInfo: {
+                                                tripId: newTrip._id,
+                                                title: newTrip.title,
+                                                description: newTrip.description,
+                                                owner: newTrip.owner,
+                                                members: newTrip.members,
+                                                startDate: newTrip.startDate,
+                                                endDate: newTrip.endDate,
+                                                invitationCode: newTrip.invitationCode
+                                            }
+                                        });
+                                    }
+                                })
+                            }
+                        })
                     }
                 });
-
             }
-
             asyncCall();
         }
     }
@@ -439,8 +454,7 @@ exports.addUserToTrip = function (req, res) {
                                                     message: 'can not add this user to the trip'
                                                 });
                                             } else {
-                                                const newTripsList = user.trips.push(trip._id);
-                                                user.trips = newTripsList;
+                                                user.trips.push(trip._id);
                                                 user.save((error) => {
                                                     if (error) {
                                                         return res.status(200).json({
