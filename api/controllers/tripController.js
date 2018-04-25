@@ -272,7 +272,7 @@ exports.getTripInfo = function (req, res) {
                 }
             });
         } else {
-            // get defaultTrip
+            // get most recent defaultTrip
             User.findOne({ _id: req.decodedJWT.userId }).select('defaultTrip').
                 exec((err, user) => {
                     if (err) {
@@ -364,22 +364,19 @@ exports.getRecentTrips = function (req, res) {
     //TODO implement
     // This is only dummy resonse
     console.log('getRecentTrips');
-    return res.status(200).json({
-        success: true,
-        trips: [
-            {
-                tripName: 'Trip One',
-                tripId: '123'
-            },
-            {
-                tripName: 'Trip two',
-                tripId: '124'
-            },
-            {
-                tripName: 'Trip three',
-                tripId: '125'
-            },
-        ]
+    console.log(req.decodedJWT.userId);
+    User.findById(req.decodedJWT.userId, (err, user) => {
+        if (err || !user) {
+            return res.status(200).json({
+                success: false,
+                message: ' something went wrong'
+            });
+        }else{
+            return res.status(200).json({
+                success: true,
+                trips: user.trips
+            });
+        }
     });
 }
 
@@ -419,8 +416,8 @@ exports.addUserToTrip = function (req, res) {
                         if (trip) {
 
                             if (
-                                trip.members.find((element)=>{return element == decoded.userId;})
-                        ) {
+                                trip.members.find((element) => { return element == decoded.userId; })
+                            ) {
                                 console.log('You are already in this trip');
                                 return res.status(200).json({
                                     success: true,
@@ -435,9 +432,29 @@ exports.addUserToTrip = function (req, res) {
                                             message: 'can not add this user to the trip'
                                         });
                                     } else {
-                                        return res.status(200).json({
-                                            success: true,
-                                        });
+                                        User.findById(decoded.userId, (error, user) => {
+                                            if (err || !user) {
+                                                return res.status(200).json({
+                                                    success: false,
+                                                    message: 'can not add this user to the trip'
+                                                });
+                                            } else {
+                                                const newTripsList = user.trips.push(trip._id);
+                                                user.trips = newTripsList;
+                                                user.save((error) => {
+                                                    if (error) {
+                                                        return res.status(200).json({
+                                                            success: false,
+                                                            message: 'can not add this user to the trip'
+                                                        });
+                                                    } else {
+                                                        return res.status(200).json({
+                                                            success: true,
+                                                        });
+                                                    }
+                                                })
+                                            }
+                                        })
                                     }
                                 })
                             }

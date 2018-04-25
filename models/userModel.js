@@ -71,10 +71,10 @@ const UserSchema = new Schema({
         type: Boolean,
         default: false
     },
-    defaultTrip: {
+    trips: [{
         type: Schema.Types.ObjectId,
         ref: 'Trip'
-    },
+    }],
 });
 
 
