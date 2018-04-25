@@ -82,16 +82,16 @@ exports.createTrip = function (req, res) {
                             error: err
                         });
                     } else {
-                        User.findById(req.decodedJWT.userId, (err, user) =>{
-                            
-                            if(err || !user){
+                        User.findById(req.decodedJWT.userId, (err, user) => {
+
+                            if (err || !user) {
                                 console.log(err)
-                                if(!user) {console.log('can not find User')}
+                                if (!user) { console.log('can not find User') }
                                 return res.status(200).json({
                                     success: false,
                                     message: 'something went wrong' + err
                                 });
-                            }else{
+                            } else {
                                 console.log(user);
                                 // const newTripsList = user.trips? user.trips.push(newTrip._id) : [newTrip._id];
                                 user.trips.push(newTrip._id);
@@ -99,14 +99,14 @@ exports.createTrip = function (req, res) {
                                 console.log('user.trips: ' + user.trips);
                                 // console.log('newTripsList: ' + newTripsList);
                                 // user.trips = newTripsList;
-                                user.save((err)=>{
-                                    if(err){
+                                user.save((err) => {
+                                    if (err) {
                                         console.log(err);
                                         return res.status(200).json({
                                             success: false,
                                             message: 'something went wrong' + err
                                         });
-                                    }else{
+                                    } else {
 
                                         console.log(user);
                                         return res.status(200).json({
@@ -215,8 +215,6 @@ exports.verifyInvitationCode = function (req, res) {
                         }
                     });
 
-
-
                 } else {    // if no token in request body
                     console.log('found the trip');
                     return res.status(200).json({
@@ -252,20 +250,55 @@ exports.verifyInvitationCode = function (req, res) {
 }
 
 exports.getTripInfo = function (req, res) {
-    //TODO implement
-    // This is only dummy resonse
     const tripId = req.query.tripId ? req.query.tripId : '';
-    if (req.body) {
-        if (tripId) {
-            Trip.findOne({ _id: tripId }).exec((err, trip) => {
+    if (tripId) {
+        Trip.findById(tripId).exec((err, trip) => {
+            if (err) {
+                console.error(err);
+                return res.status(200).json({
+                    success: false,
+                    error: err
+                });
+            }
+            if (trip) {
+                return res.status(200).json({
+                    success: true,
+                    tripInfo: {
+                        tripId: trip._id,
+                        title: trip.title,
+                        description: trip.description,
+                        owner: trip.owner,
+                        members: trip.members,
+                        startDate: trip.startDate,
+                        endDate: trip.endDate,
+                        invitationCode: trip.invitationCode
+                    }
+                });
+            } else {
+                return res.status(200).json({
+                    success: false,
+                    error: 'can not find a trip with tripId provided'
+                });
+            }
+        });
+    } else {
+        // return the trip has the shortest ending time
+        User.findById(req.decodedJWT.userId).select('trips').
+            populate({
+                path: 'trips',
+                match: { endDate: { $gte: Date.now() }}, // filter the past trips
+                options: { limit: 1, sort: { endDate: 1 } }
+            }).
+            exec((err, user) => {
                 if (err) {
                     console.error(err);
                     return res.status(200).json({
                         success: false,
                         error: err
                     });
-                }
-                if (trip) {
+                } if (user) {
+                    const trip = user.trips[0];
+                    console.log(trip);
                     return res.status(200).json({
                         success: true,
                         tripInfo: {
@@ -278,70 +311,14 @@ exports.getTripInfo = function (req, res) {
                             endDate: trip.endDate,
                             invitationCode: trip.invitationCode
                         }
-                    });
+                    })
                 } else {
                     return res.status(200).json({
                         success: false,
-                        error: 'can not find a trip with tripId provided'
+                        error: 'can not find user with token provided'
                     });
                 }
-            });
-        } else {
-            // get most recent defaultTrip
-            User.findOne({ _id: req.decodedJWT.userId }).select('defaultTrip').
-                exec((err, user) => {
-                    if (err) {
-                        console.error(err);
-                        return res.status(200).json({
-                            success: false,
-                            error: err
-                        });
-                    }
-                    if (user) {
-                        Trip.findOne({ _id: user.defaultTrip }).exec((err, trip) => {
-                            if (err) {
-                                console.error(err);
-                                return res.status(200).json({
-                                    success: false,
-                                    error: err
-                                });
-                            }
-                            if (trip) {
-                                return res.status(200).json({
-                                    success: true,
-                                    tripInfo: {
-                                        tripId: trip._id,
-                                        title: trip.title,
-                                        description: trip.description,
-                                        owner: trip.owner,
-                                        members: trip.members,
-                                        startDate: trip.startDate,
-                                        endDate: trip.endDate,
-                                        invitationCode: trip.invitationCode
-                                    }
-                                });
-                            } else {  // if there is no default trip
-                                return res.status(200).json({
-                                    success: false,
-                                    error: 'there is no default trip'
-                                });
-                            }
-                        });
-                    }
-                    // if can not find a user
-                    else {
-                        return res.status(200).json({
-                            success: false,
-                            error: 'can not find the user with userId provided'
-                        });
-                    }
-                })
-        }
-
-    } else {
-        return res.status(400).json({
-            success: false,
-        });
+            })
     }
 }
 
@@ -386,7 +363,7 @@ exports.getRecentTrips = function (req, res) {
                 success: false,
                 message: ' something went wrong'
             });
-        }else{
+        } else {
             return res.status(200).json({
                 success: true,
                 trips: user.trips
