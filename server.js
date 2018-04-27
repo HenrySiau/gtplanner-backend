@@ -33,7 +33,7 @@ const mongooseOptions = {
     bufferMaxEntries: 0
 };
 
-mongoose.connect('mongodb://localhost/test4', mongooseOptions).then(
+mongoose.connect('mongodb://localhost/test5', mongooseOptions).then(
     () => {
         console.info('mongoose.connect ready to use');
     },
