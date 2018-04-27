@@ -39,21 +39,21 @@ const UserSchema = new Schema({
 
     password: {
         type: String,
-        validate: {
-            validator: function (v) {
-                if(v===''){
-                    return true;
-                }
-                if (v.length < 8 || v.length > 30) {
-                    return false;
-                } 
-                else {
-                    return ((/[a-z]+[A-Z]+[0-9]/g).test(v))
-                }
-            },
-            message: 'password format invalid'
-        },
-        default: ''
+        // validate: {
+        //     validator: function (v) {
+        //         if(v===''){
+        //             return true;
+        //         }
+        //         if (v.length < 8 || v.length > 30) {
+        //             return false;
+        //         } 
+        //         else {
+        //             return ((/[a-z]+[A-Z]+[0-9]/g).test(v))
+        //         }
+        //     },
+        //     message: 'password format invalid'
+        // },
+        // default: ''
     },
     profilePicture: {
         type: String,
