@@ -19,117 +19,106 @@ exports.register = function (req, res) {
             success: false,
             message: 'password and confirm password not match'
         });
-        var userData = {
-            email: strip(req.body.email),
-            userName: strip(req.body.userName),
-            password: strip(req.body.password),
-            phoneNumber: req.body.phoneNumber && strip(req.body.phoneNumber)
-        };
-        // create user
-        User.create(userData, function (err, newUser) {
-            if (err) {
-                // console.log(err);
-                console.error('Can not create User name: ' + req.body.username);
-                return res.status(500).json({
-                    success: false,
-                    errors: err.errors
-                });
-            }
-            if (newUser) {
-                let tripInfo = '';
-                let userInfo = {
-                    userId: newUser._id,
-                    userName: newUser.userName,
-                    email: newUser.email,
-                    phoneNumber: newUser.phoneNumber,
-                    profilePicture: newUser.profilePicture || '',
-                };
-                let updatedUserInfo = '';
-                if (req.body.invitationCode) {
-                    console.log('Invitation Code: ' + req.body.invitationCode);
-                    Trip.findOne({ invitationCode: req.body.invitationCode }).
-                        select('members').
-                        exec((err, trip) => {
+        const invitationCode = req.body.invitationCode;
+        if (invitationCode) {
+            console.log('Invitation Code: ' + invitationCode);
+            Trip.findOne({ invitationCode: invitationCode }).
+                exec((err, trip) => {
+                    if (err) {
+                        console.err(err);
+                    }
+                    if (trip) {
+                        console.log('found the trip :' + trip.title);
+                        const userData = {
+                            email: strip(req.body.email),
+                            userName: strip(req.body.userName),
+                            password: strip(req.body.password),
+                            phoneNumber: req.body.phoneNumber && strip(req.body.phoneNumber),
+                            trips: [trip._id],
+                        };
+                        User.create(userData, function (err, newUser) {
                             if (err) {
-                                console.err(err);
+                                console.error(err);
                             }
-                            if (trip) {
-                                console.log('found the trip')
-                                newUser.trips.push(trip._id);
-                                // add trip id to user.trips
-                                newUser.save((error, updatedUser) => {
-                                    if (error) {
-                                        console.error(error);
+                            if (newUser) {
+                                console.log('new user had created: ' + newUser.userName);
+                                trip.members.push(newUser._id);
+                                trip.save((err, updatedTrip) => {
+                                    if (err) {
+                                        console.err(err);
                                     }
-                                    if (updatedUser) {
-                                        console.log('update User');
-                                        updatedUserInfo = {
-                                            userId: updatedUser._id,
-                                            userName: updatedUser.userName,
-                                            email: updatedUser.email,
-                                            trips: updatedUser.trips,
-                                            phoneNumber: updatedUser.phoneNumber,
-                                            profilePicture: updatedUser.profilePicture || '',
+                                    if (updatedTrip) {
+                                        console.log(`trip: ${updatedTrip.title}, had been updated`);
+                                        const payload = {
+                                            userId: newUser._id,
+                                            // iat is short for is available till
+                                            iat: Date.now() + config.JWTDurationMS
                                         };
-                                        trip.members.push(newUser._id);
-                                        trip.save((error, updatedTrip) => {
-                                            if (error) {
-                                                console.error(error);
+                                        const token = jwt.sign(payload, superSecret);
+                                        return res.status(200).json({
+                                            success: true,
+                                            message: 'new user created and joined a trip',
+                                            token: token,
+                                            userInfo: {
+                                                userId: newUser._id,
+                                                userName: newUser.userName,
+                                                email: newUser.email,
+                                                phoneNumber: newUser.phoneNumber,
+                                                profilePicture: newUser.profilePicture || '',
+                                                trips: newUser.trips,
+                                            },
+                                            tripInfo: {
+                                                tripId: updatedTrip._id,
+                                                title: updatedTrip.title,
+                                                description: updatedTrip.description,
+                                                owner: updatedTrip.owner,
+                                                members: updatedTrip.members,
+                                                startDate: updatedTrip.startDate,
+                                                endDate: updatedTrip.endDate,
+                                                invitationCode: updatedTrip.invitationCode
                                             }
-                                            if (updatedTrip) {
-                                                console.log('update Trip');
-                                                tripInfo = {
-                                                    tripId: updatedTrip._id,
-                                                    title: updatedTrip.title,
-                                                    description: updatedTrip.description,
-                                                    owner: updatedTrip.owner,
-                                                    members: updatedTrip.members,
-                                                    startDate: updatedTrip.startDate,
-                                                    endDate: updatedTrip.endDate,
-                                                    invitationCode: updatedTrip.invitationCode
-                                                }
-                                                const payload = {
-                                                    userId: newUser._id,
-                                                    // iat is short for is available till
-                                                    iat: Date.now() + config.JWTDurationMS
-                                                };
-                                                var token = jwt.sign(payload, superSecret);
-                                                console.log('updatedUserInfo: ' + updatedUserInfo);
-                                                console.log('tripIfo: ' + tripInfo)
-                                                return res.status(200).json({
-                                                    success: true,
-                                                    message: 'new user created',
-                                                    token: token,
-                                                    tripInfo: tripInfo,
-                                                    userInfo: updatedUserInfo || userInfo,
-                                                });
-                                            }
-                                        })
+                                        });
                                     }
-                                });
-                            } else {
-                                console.log('can not find the trip');
+                                })
                             }
-                        });
-                } else { // no invitation code
+                        })
+                    }
+                })
+        }
+        else {   // no invitation code
+            const userData = {
+                email: strip(req.body.email),
+                userName: strip(req.body.userName),
+                password: strip(req.body.password),
+                phoneNumber: req.body.phoneNumber && strip(req.body.phoneNumber),
+            };
+            User.create(userData, function (err, newUser) {
+                if(err){
+                    console.err(err);
+                }
+                if(newUser){
                     const payload = {
                         userId: newUser._id,
                         // iat is short for is available till
                         iat: Date.now() + config.JWTDurationMS
                     };
-                    var token = jwt.sign(payload, superSecret);
-                    console.log('updatedUserInfo: ' + updatedUserInfo);
-                    console.log('tripIfo: ' + tripInfo)
+                    const token = jwt.sign(payload, superSecret);
                     return res.status(200).json({
                         success: true,
-                        message: 'new user created',
+                        message: 'new user created and joined a trip',
                         token: token,
-                        tripInfo: tripInfo,
-                        userInfo: updatedUserInfo || userInfo,
+                        userInfo: {
+                            userId: newUser._id,
+                            userName: newUser.userName,
+                            email: newUser.email,
+                            phoneNumber: newUser.phoneNumber,
+                            profilePicture: newUser.profilePicture || '',
+                            trips: newUser.trips,
+                        },
                     });
                 }
-            }
-        });
+            })
+        }
     } else {
         // user registration form missing information
         res.status(400).json({
@@ -176,64 +165,210 @@ exports.signIn = function (req, res) {
 // TODO required server side verification 
 exports.LoginWithFacebook = function (req, res) {
     if (req.body.email && req.body.userName && req.body.accessToken) {
-        User.findOne({ email: req.body.email }).exec(function (err, user) {
-            if (err) {
-                console.error('err:' + err);
-                return res.status(401).json({
-                    // TODO: verify the code and add user to the trip/group
-                    message: 'Invalid username or password.'
-                });
-            }
-
-            if (!user) {
-                // Create a new user
-                var userData = {
-                    email: req.body.email,
-                    userName: req.body.userName,
-                    isSocialAuth: true,
-                    facebookProfilePictureURL: req.body.facebookProfilePictureURL
-
-                };
-                User.create(userData, function (err, newUser) {
-                    if (err) {
-                        console.log(err);
-                        console.error('Can not create User name: ' + req.body.userName);
-                        return res.status(200).json({
-                            success: false,
-                            errors: err.errors
-                        });
-                    }
-                    if (newUser) {
-                        let tripInfo = '';
-                        if (req.body.invitationCode) {
-                            Trip.findOne({ invitationCode: req.body.invitationCode }).
-                                select('members').
-                                exec((err, trip) => {
-                                    if (err) {
-
-                                    }
-                                    if (trip) {
-                                        newUser.trips.push(trip._id);
-                                        newUser.save((err, updatedUser) => {
-
-                                        });
-
-                                    }
-
-                                });
-
-                            // todo: join 
-                            console.log(req.body.invitationCode);
+        console.log('LoginWithFacebook');
+        const invitationCode = req.body.invitationCode;
+        if (invitationCode) {
+            console.log('with invitationCode: ' + invitationCode);
+            Trip.findOne({ invitationCode: invitationCode }).exec((err, trip) => {
+                console.log('found  the trip')
+                if (err) {
+                    console.err(err);
+                }
+                if (trip) {
+                    User.findOne({ email: req.body.email }).exec(function (err, user) {
+                        if (err) {
+                            console.error('err:' + err);
+                            return res.status(401).json({
+                                // TODO: verify the code and add user to the trip/group
+                                message: 'Invalid username or password.'
+                            });
                         }
+                        if (!user) {
+                            console.log('found the user');
+                            // Create a new user
+                            const userData = {
+                                email: req.body.email,
+                                userName: req.body.userName,
+                                isSocialAuth: true,
+                                facebookProfilePictureURL: req.body.facebookProfilePictureURL,
+                                trips: [trip._id]
+                            };
+                            User.create(userData, function (err, newUser) {
+                                if (err) {
+                                    console.log(err);
+                                    console.error('Can not create User name: ' + req.body.userName);
+                                    return res.status(200).json({
+                                        success: false,
+                                        errors: err.errors
+                                    });
+                                }
+                                if (newUser) {
+                                    console.log('new user created');
+                                    trip.members.push(newUser._id);
+                                    trip.save((err, updatedTrip) => {
+                                        if (err) {
+                                            console.error(err);
+                                        }
+                                        if (updatedTrip) {
+                                            const payload = {
+                                                userId: newUser._id,
+                                                // iat is short for is available till
+                                                iat: Date.now() + config.JWTDurationMS
+                                            };
+                                            const token = jwt.sign(payload, superSecret);
+                                            return res.status(200).json({
+                                                success: true,
+                                                message: 'new user created and joined a trip',
+                                                token: token,
+                                                userInfo: {
+                                                    userId: newUser._id,
+                                                    userName: newUser.userName,
+                                                    email: newUser.email,
+                                                    phoneNumber: newUser.phoneNumber,
+                                                    profilePicture: newUser.profilePicture || '',
+                                                    trips: newUser.trips,
+                                                },
+                                                tripInfo: {
+                                                    tripId: updatedTrip._id,
+                                                    title: updatedTrip.title,
+                                                    description: updatedTrip.description,
+                                                    owner: updatedTrip.owner,
+                                                    members: updatedTrip.members,
+                                                    startDate: updatedTrip.startDate,
+                                                    endDate: updatedTrip.endDate,
+                                                    invitationCode: updatedTrip.invitationCode
+                                                }
+                                            });
+                                        }
+                                    })
+                                }
+                            });
+                        }
+                        if (user) {
+                            user.trips.push(trip._id);
+                            user.save((err, updatedUser) => {
+                                if (err) {
+                                    console.err(err);
+                                }
+                                if (updatedUser) {
+                                    trip.push(updatedUser._id);
+                                    trip.save((err, updatedTrip) => {
+                                        const payload = {
+                                            userId: user._id,
+                                            // iat is short for is available till
+                                            iat: Date.now() + config.JWTDurationMS
+                                        };
+                                        const token = jwt.sign(payload, superSecret);
+                                        return res.status(200).json({
+                                            success: true,
+                                            message: 'new user created and joined a trip',
+                                            token: token,
+                                            userInfo: {
+                                                userId: newUser._id,
+                                                userName: newUser.userName,
+                                                email: newUser.email,
+                                                phoneNumber: newUser.phoneNumber,
+                                                profilePicture: newUser.profilePicture || '',
+                                                trips: newUser.trips,
+                                            },
+                                            tripInfo: {
+                                                tripId: updatedTrip._id,
+                                                title: updatedTrip.title,
+                                                description: updatedTrip.description,
+                                                owner: updatedTrip.owner,
+                                                members: updatedTrip.members,
+                                                startDate: updatedTrip.startDate,
+                                                endDate: updatedTrip.endDate,
+                                                invitationCode: updatedTrip.invitationCode
+                                            }
+                                        });
+                                    })
+                                }
+                            })
+                            const payload = {
+                                userId: user._id,
+                                // iat is short for is available till
+                                iat: Date.now() + config.JWTDurationMS
+                            };
+                            const token = jwt.sign(payload, superSecret);
+                            res.status(200).json({
+                                success: true,
+                                token: token,
+                                userInfo: {
+                                    userId: user._id,
+                                    userName: user.userName,
+                                    email: user.email,
+                                    phoneNumber: user.phoneNumber,
+                                    profilePicture: user.profilePicture,
+                                    facebookProfilePictureURL: user.facebookProfilePictureURL
+                                },
+                            });
+                        }
+                    });
+                }
+            })
+        } else {// no invitation Code
+            User.findOne({ email: req.body.email }).exec(function (err, user) {
+                if (err) {
+                    console.error('err:' + err);
+                    return res.status(401).json({
+                        // TODO: verify the code and add user to the trip/group
+                        message: 'Invalid username or password.'
+                    });
+                }
+                if (!user) {
+                    // Create a new user
+                    const userData = {
+                        email: req.body.email,
+                        userName: req.body.userName,
+                        isSocialAuth: true,
+                        facebookProfilePictureURL: req.body.facebookProfilePictureURL,
+                    };
+                    User.create(userData, function (err, newUser) {
+                        if (err) {
+                            console.log(err);
+                            console.error('Can not create User name: ' + req.body.userName);
+                            return res.status(200).json({
+                                success: false,
+                                errors: err.errors
+                            });
+                        }
+                        if (newUser) {
+                            console.log('new user created');
+                            const payload = {
+                                userId: newUser._id,
+                                // iat is short for is available till
+                                iat: Date.now() + config.JWTDurationMS
+                            };
+                            const token = jwt.sign(payload, superSecret);
+                            return res.status(200).json({
+                                success: true,
+                                message: 'new user created and joined a trip',
+                                token: token,
+                                userInfo: {
+                                    userId: newUser._id,
+                                    userName: newUser.userName,
+                                    email: newUser.email,
+                                    phoneNumber: newUser.phoneNumber,
+                                    profilePicture: newUser.profilePicture || '',
+                                    trips: newUser.trips,
+                                },
+                            });
+                        }
+                    });
+                }
+                if (user) {
+                    // find default trip
+                    trip.save((err, updatedTrip) => {
                         const payload = {
-                            userId: newUser._id,
+                            userId: user._id,
                             // iat is short for is available till
                             iat: Date.now() + config.JWTDurationMS
                         };
-                        var token = jwt.sign(payload, superSecret);
+                        const token = jwt.sign(payload, superSecret);
                         return res.status(200).json({
                             success: true,
-                            message: 'new user created',
+                            message: 'new user created and joined a trip',
                             token: token,
                             userInfo: {
                                 userId: newUser._id,
@@ -241,37 +376,42 @@ exports.LoginWithFacebook = function (req, res) {
                                 email: newUser.email,
                                 phoneNumber: newUser.phoneNumber,
                                 profilePicture: newUser.profilePicture || '',
+                                trips: newUser.trips,
                             },
-                            tripInfo: tripInfo,
+                            tripInfo: {
+                                tripId: updatedTrip._id,
+                                title: updatedTrip.title,
+                                description: updatedTrip.description,
+                                owner: updatedTrip.owner,
+                                members: updatedTrip.members,
+                                startDate: updatedTrip.startDate,
+                                endDate: updatedTrip.endDate,
+                                invitationCode: updatedTrip.invitationCode
+                            }
                         });
-                    }
-                });
-            }
-            if (user) {
-                if (req.body.invitationCode) {
-                    // todo: join 
-                    console.log(req.body.invitationCode);
-                }
-                const payload = {
-                    userId: user._id,
-                    // iat is short for is available till
-                    iat: Date.now() + config.JWTDurationMS
-                };
-                var token = jwt.sign(payload, superSecret);
-                res.status(200).json({
-                    success: true,
-                    token: token,
-                    userInfo: {
+                    })
+
+                    const payload = {
                         userId: user._id,
-                        userName: user.userName,
-                        email: user.email,
-                        phoneNumber: user.phoneNumber,
-                        profilePicture: user.profilePicture,
-                        facebookProfilePictureURL: user.facebookProfilePictureURL
-                    },
-                });
-            }
-        });
+                        // iat is short for is available till
+                        iat: Date.now() + config.JWTDurationMS
+                    };
+                    const token = jwt.sign(payload, superSecret);
+                    res.status(200).json({
+                        success: true,
+                        token: token,
+                        userInfo: {
+                            userId: user._id,
+                            userName: user.userName,
+                            email: user.email,
+                            phoneNumber: user.phoneNumber,
+                            profilePicture: user.profilePicture,
+                            facebookProfilePictureURL: user.facebookProfilePictureURL
+                        },
+                    });
+                }
+            });
+        }
     } else {
         res.status(401).json({
             success: false,
