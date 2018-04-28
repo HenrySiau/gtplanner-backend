@@ -72,7 +72,7 @@ exports.createTrip = function (req, res) {
                     invitationCode: invitationCode,
                     members: [req.decodedJWT.userId],
                     startDate: new Date(req.body.startDate).setHours(0, 0, 0, 0), // set to first second of the date
-                    endDate: new Date(req.body.endDate).setHours(23,59,59,999), // set to last second of the date
+                    endDate: new Date(req.body.endDate).setHours(23, 59, 59, 999), // set to last second of the date
                 };
                 Trip.create(tripData, function (err, newTrip) {
                     if (err || !newTrip) {
@@ -147,7 +147,7 @@ exports.verifyInvitationCode = function (req, res) {
                     error: err
                 });
             }
-            if (trip) {
+            if (trip) { //found the trip matches invitationCode
                 if (req.body.token) {
                     jwt.verify(req.body.token, superSecret, function (err, decoded) {
                         if (err) {
@@ -177,35 +177,25 @@ exports.verifyInvitationCode = function (req, res) {
                                                 success: false,
                                                 message: 'can not find this User in database'
                                             });
-                                        } else {
-                                            // update token
-                                            const payload = {
-                                                userId: user._id,
-                                                // iat is short for is available till
-                                                iat: Date.now() + config.JWTDurationMS
-                                            };
-                                            const token = jwt.sign(payload, superSecret);
+                                        }
+                                        if (user) {
                                             res.status(200).json({
                                                 success: true,
-                                                token: token,
                                                 tripInfo: {
                                                     tripId: trip._id,
                                                     title: trip.title,
-                                                    description: trip.description,
-                                                    owner: trip.owner,
-                                                    members: trip.members,
-                                                    startDate: trip.startDate,
-                                                    endDate: trip.endDate,
                                                     invitationCode: trip.invitationCode
                                                 },
                                                 userInfo: {
                                                     userId: user._id,
                                                     userName: user.userName,
                                                     email: user.email,
-                                                    phoneNumber: user.phoneNumber,
-                                                    profilePicture: user.profilePicture,
-                                                    facebookProfilePictureURL: user.facebookProfilePictureURL
                                                 }
+                                            });
+                                        } else {
+                                            res.status(200).json({
+                                                success: false,
+                                                message: 'can not find this User in database'
                                             });
                                         }
                                     }
@@ -222,11 +212,6 @@ exports.verifyInvitationCode = function (req, res) {
                         tripInfo: {
                             tripId: trip._id,
                             title: trip.title,
-                            description: trip.description,
-                            owner: trip.owner,
-                            members: trip.members,
-                            startDate: trip.startDate,
-                            endDate: trip.endDate,
                             invitationCode: trip.invitationCode
                         }
                     });
@@ -286,7 +271,7 @@ exports.getTripInfo = function (req, res) {
         User.findById(req.decodedJWT.userId).select('trips').
             populate({
                 path: 'trips',
-                match: { endDate: { $gte: Date.now() }}, // filter the past trips
+                match: { endDate: { $gte: Date.now() } }, // filter the past trips
                 options: { limit: 1, sort: { endDate: 1 } }
             }).
             exec((err, user) => {
@@ -358,20 +343,20 @@ exports.getRecentTrips = function (req, res) {
     console.log('getRecentTrips');
     console.log(req.decodedJWT.userId);
     User.findById(req.decodedJWT.userId, ).
-    populate('trips').
-    exec((err, user) => {
-        if (err || !user) {
-            return res.status(200).json({
-                success: false,
-                message: ' something went wrong'
-            });
-        } else {
-            return res.status(200).json({
-                success: true,
-                trips: user.trips
-            });
-        }
-    });
+        populate('trips').
+        exec((err, user) => {
+            if (err || !user) {
+                return res.status(200).json({
+                    success: false,
+                    message: ' something went wrong'
+                });
+            } else {
+                return res.status(200).json({
+                    success: true,
+                    trips: user.trips
+                });
+            }
+        });
 }
 
 exports.addUserToTrip = function (req, res) {
@@ -408,24 +393,55 @@ exports.addUserToTrip = function (req, res) {
                             });
                         }
                         if (trip) {
-
                             if (
                                 trip.members.find((element) => { return element == decoded.userId; })
                             ) {
                                 console.log('You are already in this trip');
-                                return res.status(200).json({
-                                    success: true,
-                                });
+                                User.findById(decoded.userId).exec((err, user) => {
+                                    if (err) { console.error(err) }
+                                    if (user) {
+                                        const payload = {
+                                            userId: user._id,
+                                            // iat is short for is available till
+                                            iat: Date.now() + config.JWTDurationMS
+                                        };
+                                        const token = jwt.sign(payload, superSecret);
+                                        return res.status(200).json({
+                                            success: true,
+                                            token: token,
+                                            tripInfo: {
+                                                tripId: trip._id,
+                                                title: trip.title,
+                                                description: trip.description,
+                                                owner: trip.owner,
+                                                members: trip.members,
+                                                startDate: trip.startDate,
+                                                endDate: trip.endDate,
+                                                invitationCode: trip.invitationCode
+                                            },
+                                            userInfo: {
+                                                userId: user._id,
+                                                userName: user.userName,
+                                                email: user.email,
+                                                phoneNumber: user.phoneNumber,
+                                                profilePicture: user.profilePicture,
+                                                facebookProfilePictureURL: user.facebookProfilePictureURL,
+                                                trips: user.trips
+                                            }
+                                        });
+                                    }
+                                })
                             } else {
                                 let newMembers = trip.members.push(decoded.userId);
                                 trip.members = newMembers;
-                                trip.save((error) => {
+                                trip.save((error, updatedTrip) => {
                                     if (err) {
                                         return res.status(200).json({
                                             success: false,
                                             message: 'can not add this user to the trip'
                                         });
-                                    } else {
+                                    }
+                                    if (updatedTrip) {
                                         User.findById(decoded.userId, (error, user) => {
                                             if (err || !user) {
                                                 return res.status(200).json({
@@ -434,15 +450,42 @@ exports.addUserToTrip = function (req, res) {
                                                 });
                                             } else {
                                                 user.trips.push(trip._id);
-                                                user.save((error) => {
+                                                user.save((error, updatedUser) => {
                                                     if (error) {
                                                         return res.status(200).json({
                                                             success: false,
                                                             message: 'can not add this user to the trip'
                                                         });
-                                                    } else {
-                                                        return res.status(200).json({
+                                                    }
+                                                    if (updatedUser) {
+                                                        const payload = {
+                                                            userId: updatedUser._id,
+                                                            // iat is short for is available till
+                                                            iat: Date.now() + config.JWTDurationMS
+                                                        };
+                                                        const token = jwt.sign(payload, superSecret);
+                                                        res.status(200).json({
                                                             success: true,
+                                                            token: token,
+                                                            tripInfo: {
+                                                                tripId: updatedTrip._id,
+                                                                title: updatedTrip.title,
+                                                                description: updatedTrip.description,
+                                                                owner: updatedTrip.owner,
+                                                                members: updatedTrip.members,
+                                                                startDate: updatedTrip.startDate,
+                                                                endDate: updatedTrip.endDate,
+                                                                invitationCode: updatedTrip.invitationCode
+                                                            },
+                                                            userInfo: {
+                                                                userId: updatedUser._id,
+                                                                userName: updatedUser.userName,
+                                                                email: updatedUser.email,
+                                                                phoneNumber: updatedUser.phoneNumber,
+                                                                profilePicture: updatedUser.profilePicture,
+                                                                facebookProfilePictureURL: updatedUser.facebookProfilePictureURL,
+                                                                trips: updatedUser.trips
+                                                            }
                                                         });
                                                     }
                                                 })
