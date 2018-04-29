@@ -30,7 +30,7 @@ const UserSchema = new Schema({
         required: [true, 'Email required'],
         unique: true
     },
-    
+
     phoneNumber: {
         type: String,
         maxlength: 30,
@@ -80,19 +80,24 @@ const UserSchema = new Schema({
 
 //hashing a password before saving it to the database
 UserSchema.pre('save', function (next) {
+    console.log('UserSchema Pre save');
     var user = this;
-    bcrypt.hash(user.password, 10, function (err, hash) {
-        if (err) {
-            return next(err);
-        }
-        user.password = hash;
+    if (user.password) {
+        bcrypt.hash(user.password, 10, function (err, hash) {
+            if (err) {
+                return next(err);
+            }
+            user.password = hash;
+            next();
+        });
+    }else{
         next();
-    });
+    }
 });
 // Authenticate input against database
 // Do not declare statics using ES6 arrow functions (=>)
 UserSchema.statics.authenticate = function (email, password, callback) {
-    if(password===''){
+    if (password === '') {
         return callback(err);
     }
     User.findOne({

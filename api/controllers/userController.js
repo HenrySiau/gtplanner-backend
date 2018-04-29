@@ -93,10 +93,10 @@ exports.register = function (req, res) {
                 phoneNumber: req.body.phoneNumber && strip(req.body.phoneNumber),
             };
             User.create(userData, function (err, newUser) {
-                if(err){
+                if (err) {
                     console.err(err);
                 }
-                if(newUser){
+                if (newUser) {
                     const payload = {
                         userId: newUser._id,
                         // iat is short for is available till
@@ -166,6 +166,7 @@ exports.signIn = function (req, res) {
 exports.LoginWithFacebook = function (req, res) {
     if (req.body.email && req.body.userName && req.body.accessToken) {
         console.log('LoginWithFacebook');
+        console.log(req.body);
         const invitationCode = req.body.invitationCode;
         if (invitationCode) {
             console.log('with invitationCode: ' + invitationCode);
@@ -285,29 +286,12 @@ exports.LoginWithFacebook = function (req, res) {
                                     })
                                 }
                             })
-                            const payload = {
-                                userId: user._id,
-                                // iat is short for is available till
-                                iat: Date.now() + config.JWTDurationMS
-                            };
-                            const token = jwt.sign(payload, superSecret);
-                            res.status(200).json({
-                                success: true,
-                                token: token,
-                                userInfo: {
-                                    userId: user._id,
-                                    userName: user.userName,
-                                    email: user.email,
-                                    phoneNumber: user.phoneNumber,
-                                    profilePicture: user.profilePicture,
-                                    facebookProfilePictureURL: user.facebookProfilePictureURL
-                                },
-                            });
                         }
                     });
                 }
             })
-        } else {// no invitation Code
+        } else {// no invitationCode
+            console.log('no invitationCode');
             User.findOne({ email: req.body.email }).exec(function (err, user) {
                 if (err) {
                     console.error('err:' + err);
@@ -318,6 +302,7 @@ exports.LoginWithFacebook = function (req, res) {
                 }
                 if (!user) {
                     // Create a new user
+                    console.log('creating a new user')
                     const userData = {
                         email: req.body.email,
                         userName: req.body.userName,
@@ -326,7 +311,7 @@ exports.LoginWithFacebook = function (req, res) {
                     };
                     User.create(userData, function (err, newUser) {
                         if (err) {
-                            console.log(err);
+                            console.error(err);
                             console.error('Can not create User name: ' + req.body.userName);
                             return res.status(200).json({
                                 success: false,
@@ -354,61 +339,105 @@ exports.LoginWithFacebook = function (req, res) {
                                     trips: newUser.trips,
                                 },
                             });
+                        } else {
+                            console.log('fail creating new user');
                         }
                     });
                 }
                 if (user) {
+                    console.log('user exist');
                     // find default trip
-                    trip.save((err, updatedTrip) => {
-                        const payload = {
-                            userId: user._id,
-                            // iat is short for is available till
-                            iat: Date.now() + config.JWTDurationMS
-                        };
-                        const token = jwt.sign(payload, superSecret);
-                        return res.status(200).json({
-                            success: true,
-                            message: 'new user created and joined a trip',
-                            token: token,
-                            userInfo: {
-                                userId: newUser._id,
-                                userName: newUser.userName,
-                                email: newUser.email,
-                                phoneNumber: newUser.phoneNumber,
-                                profilePicture: newUser.profilePicture || '',
-                                trips: newUser.trips,
-                            },
-                            tripInfo: {
-                                tripId: updatedTrip._id,
-                                title: updatedTrip.title,
-                                description: updatedTrip.description,
-                                owner: updatedTrip.owner,
-                                members: updatedTrip.members,
-                                startDate: updatedTrip.startDate,
-                                endDate: updatedTrip.endDate,
-                                invitationCode: updatedTrip.invitationCode
-                            }
-                        });
-                    })
-
                     const payload = {
                         userId: user._id,
                         // iat is short for is available till
                         iat: Date.now() + config.JWTDurationMS
                     };
                     const token = jwt.sign(payload, superSecret);
-                    res.status(200).json({
-                        success: true,
-                        token: token,
-                        userInfo: {
-                            userId: user._id,
-                            userName: user.userName,
-                            email: user.email,
-                            phoneNumber: user.phoneNumber,
-                            profilePicture: user.profilePicture,
-                            facebookProfilePictureURL: user.facebookProfilePictureURL
-                        },
-                    });
+                    Trip.findOne({ endDate: { $gte: Date.now() } }).
+                        sort({ endDate: 1 }).
+                        exec((err, defaultTrip) => {
+                            if (err) {
+                                console.err(err);
+                            }
+                            if (defaultTrip) {
+                                console.log('found a active trip');
+                                return res.status(200).json({
+                                    success: true,
+                                    message: 'new user created and joined a trip',
+                                    token: token,
+                                    userInfo: {
+                                        userId: user._id,
+                                        userName: user.userName,
+                                        email: user.email,
+                                        phoneNumber: user.phoneNumber,
+                                        profilePicture: user.profilePicture || '',
+                                        trips: user.trips,
+                                    },
+                                    tripInfo: {
+                                        tripId: defaultTrip._id,
+                                        title: defaultTrip.title,
+                                        description: defaultTrip.description,
+                                        owner: defaultTrip.owner,
+                                        members: defaultTrip.members,
+                                        startDate: defaultTrip.startDate,
+                                        endDate: defaultTrip.endDate,
+                                        invitationCode: defaultTrip.invitationCode
+                                    }
+                                });
+                            } else {  // no active trip
+                                // find most recent trip
+                                Trip.findOne().
+                                    sort({ endDate: -1 }).
+                                    exec((err, mostRecentTrip) => {
+                                        if (err) {
+                                            console.err(err);
+                                        }
+                                        if (mostRecentTrip) {
+                                            console.log('found a most recent trip');
+                                            return res.status(200).json({
+                                                success: true,
+                                                message: 'new user created and joined a trip',
+                                                token: token,
+                                                userInfo: {
+                                                    userId: user._id,
+                                                    userName: user.userName,
+                                                    email: user.email,
+                                                    phoneNumber: user.phoneNumber,
+                                                    profilePicture: user.profilePicture || '',
+                                                    trips: user.trips,
+                                                },
+                                                tripInfo: {
+                                                    tripId: mostRecentTrip._id,
+                                                    title: mostRecentTrip.title,
+                                                    description: mostRecentTrip.description,
+                                                    owner: mostRecentTrip.owner,
+                                                    members: mostRecentTrip.members,
+                                                    startDate: mostRecentTrip.startDate,
+                                                    endDate: mostRecentTrip.endDate,
+                                                    invitationCode: mostRecentTrip.invitationCode
+                                                }
+                                            })
+                                        } else {
+                                            console.log('no trip found');
+                                            return res.status(200).json({
+                                                success: true,
+                                                message: 'new user created',
+                                                token: token,
+                                                userInfo: {
+                                                    userId: user._id,
+                                                    userName: user.userName,
+                                                    email: user.email,
+                                                    phoneNumber: user.phoneNumber,
+                                                    profilePicture: user.profilePicture || '',
+                                                    trips: user.trips,
+                                                },
+                                            })
+                                        }
+                                    })
+                                //
+                            }
+
+                        })
                 }
             });
         }
@@ -419,9 +448,9 @@ exports.LoginWithFacebook = function (req, res) {
         });
     }
 };
-exports.LoginWithToken = function (req, res) {
+exports.LoginWithToken = (req, res) => {
     if (req.body.token) {
-        jwt.verify(req.body.token, superSecret, function (err, decoded) {
+        jwt.verify(req.body.token, superSecret, (err, decoded) => {
             if (err) {
                 return res.json({
                     success: false,
