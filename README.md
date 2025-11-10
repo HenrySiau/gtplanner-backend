@@ -2,7 +2,6 @@
 
 ## gtplanner-backend
 A backend for www.gtplanner.com<br>
-This app is under construction, working on user registration and sign in feature, other features have not built yet.
 
 ## Features
 - User registration and sign in
